@@ -1,0 +1,151 @@
+<script setup>
+import { ref } from 'vue';
+//表单的可见性
+const dialogVisible = ref(false);
+//对话的可见性
+const conversationVisible = ref(false);
+
+//表单模块
+const form = ref({
+    planName: '',
+    planTarget: '',
+    spareTime: '',
+    timeSpan: '',
+    preference: '',
+    level: '',
+    resource: ''
+});
+const openForm = () => { //打开表单
+    dialogVisible.value = true;
+};
+const submitForm = () => { //提交表单
+    console.log('提交的表单数据：', form.value);
+    dialogVisible.value = false;
+    conversationVisible.value = true;
+};
+
+//发送消息
+const send = () => { }
+
+//历史计划
+const historyPlanForm = ref([])
+</script>
+
+<template>
+    <div class="common-layout">
+        <el-container>
+            <el-main>
+                <!-- 新建模块 -->
+                <div v-if="!conversationVisible">
+                    <div class="create-button">
+                        <el-button type="primary" @click="openForm">添加计划</el-button>
+                    </div>
+                    <!-- 创建计划表单 -->
+                    <el-dialog v-model="dialogVisible" title="添加新计划">
+                        <el-form :model="form" label-width="80px">
+                            <el-form-item label="计划名称">
+                                <el-input v-model="form.planName"></el-input>
+                            </el-form-item>
+                            <el-form-item label="计划目标">
+                                <el-input v-model="form.planTarget"></el-input>
+                            </el-form-item>
+                            <el-form-item label="空闲时段">
+                                <el-input v-model="form.spareTime"></el-input>
+                            </el-form-item>
+                            <el-form-item label="计划周期">
+                                <el-input v-model="form.timeSpan"></el-input>
+                            </el-form-item>
+                            <el-form-item label="学习偏好">
+                                <el-input v-model="form.preference"></el-input>
+                            </el-form-item>
+                            <el-form-item label="当前水平">
+                                <el-input v-model="form.level"></el-input>
+                            </el-form-item>
+                            <el-form-item label="现有资源">
+                                <el-input v-model="form.resource"></el-input>
+                            </el-form-item>
+                        </el-form>
+                        <template #footer>
+                            <el-button @click="dialogVisible = false">取消</el-button>
+                            <el-button type="primary" @click="submitForm">确定</el-button>
+                        </template>
+                    </el-dialog>
+                </div>
+
+                <!-- 对话模块 -->
+                <div v-if="conversationVisible" class="message-box-container">
+                    <div class="message-box">
+                        <input v-model="message" @keyup.enter="sendMessage" type="text" placeholder="Type your message"
+                            class="message-input" />
+                        <button @click="send" class="send-button">发送</button>
+                    </div>
+                </div>
+            </el-main>
+
+            <el-aside width="200px">
+                <h1>
+                    历史计划
+                </h1>
+                <div class="historyPlanForm">
+                    <el-form :model="historyPlanForm">
+                    </el-form>
+                </div>
+            </el-aside>
+        </el-container>
+    </div>
+</template>
+
+<style scoped>
+.dialog-footer {
+    text-align: right;
+}
+
+.create-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80vh;
+}
+
+.message-box-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    /* background-color: #f1f1f1; */
+    padding: 10px;
+    /* box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); */
+    display: flex;
+    justify-content: center;
+}
+
+.message-box {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
+}
+
+.message-input {
+    flex-grow: 1;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.send-button {
+    padding: 10px 20px;
+    margin-left: 10px;
+    font-size: 16px;
+    border: none;
+    background-color: #008e74;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.send-button:hover {
+    background-color: #005445;
+}
+</style>
