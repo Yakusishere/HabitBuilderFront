@@ -80,7 +80,7 @@ export default {
 
 <template>
     <div>
-        <button class="publish-button" @click="showModal = true">发布帖子</button>
+        <el-button class="publish-button" type="primary" auto-insert-space @click="showModal = true">发布帖子</el-button>
 
         <el-dialog v-model="showModal" width="50%">
             <template #header>
@@ -119,7 +119,7 @@ body {
     font-family: Arial, sans-serif;
 }
 
-.publish-button {
+/* .publish-button {
     background-color: #FF4D4F;
     color: white;
     border: none;
@@ -128,11 +128,11 @@ body {
     cursor: pointer;
     font-size: 16px;
     margin-top: 10px;
-}
+} */
 
-.publish-button:hover {
+/* .publish-button:hover {
     background-color: #FF6F6F;
-}
+} */
 
 .cancel-button {
     background: none;
