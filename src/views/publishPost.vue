@@ -1,6 +1,7 @@
 <script lang="ts">
 import { ref } from 'vue'
 import type { UploadFile } from 'element-plus'
+import instance from '@/utils/request';
 import { RefSymbol } from '@vue/reactivity';
 
 export default {
@@ -39,11 +40,34 @@ export default {
             dialogVisible.value = true
         }
 
-        const submitPost = () => {
-            // 这里可以添加提交帖子的逻辑，例如发送到后端 API
-            console.log('发布帖子', post.value)
-            //console.log("fileList:",fileList.value)
-            resetForm()
+        //创建帖子api
+        const createPost = (post: any) => {
+            console.log("已调用创建帖子方法");
+            console.log("imageUrl:",post.value.images);
+            let imageStr = post.value.images.join(',');
+            console.log("imageStr:",imageStr);
+            let myPost = ({
+                userId: 1,
+                title: post.value.title,
+                content: post.value.content,
+                images: imageStr
+            })
+            console.log("mypost:"+myPost.title+myPost.content+myPost.images)
+            return instance.post('/post/createPost', myPost)
+        }
+
+        const submitPost = async () => {
+            let res;
+            res = await createPost(post);
+            if (res.code === 0) {
+                console.log('发布成功')
+                //console.log("fileList:",fileList.value)
+                resetForm()
+                showModal.value = false;
+            }
+            else{
+                console.log('发布失败')
+            }
         }
 
         const cancelPost = () => {
@@ -72,7 +96,8 @@ export default {
             submitPost,
             cancelPost,
             resetForm,
-            fileList
+            fileList,
+            createPost
         }
     }
 }
@@ -91,8 +116,8 @@ export default {
 
             <div class="modal-body">
                 <div class="imageUploader">
-                    <el-upload ref="upload" class="upload-demo" list-type="picture-card"
-                        :file-list="fileList" :on-preview="handlePictureCardPreview" :on-remove="handleRemove"
+                    <el-upload ref="upload" class="upload-demo" list-type="picture-card" :file-list="fileList"
+                        :on-preview="handlePictureCardPreview" :on-remove="handleRemove"
                         :on-change="handleUploadSuccess" :auto-upload="false">
                         <el-icon>
                             <Plus />

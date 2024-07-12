@@ -1,169 +1,453 @@
-<script lang="ts">
-import { ref } from 'vue'
-import type { UploadFile } from 'element-plus'
-import { RefSymbol } from '@vue/reactivity';
+<script>
+import { Search } from "@element-plus/icons-vue";
+import { ref, onMounted } from "vue";
+import PostCard from './CardPost.vue';
+import PublishPost from './publishPost.vue'
+import instance from '@/utils/request';
 
 export default {
-    name: 'test',
+    name: 'communityPage',
+    components: {
+        PostCard,
+        PublishPost
+    },
     setup() {
-        const fileList = ref([])
+        const search = ref("");
+        const selectedPost = ref(true);
+        const newComment = ref("");
 
-        const showModal = ref(false)
-        const dialogImageUrl = ref('')
-        const dialogVisible = ref(false)
-        const disabled = ref(false)
-        const post = ref({
-            title: '',
-            content: '',
-            images: [] //储存图片url
+        const isliked = ref(false)
+        const isFav = ref(false)
+        const isTyping = ref(false)//查看是否在打字
+
+        //调用获取所有帖子接口
+        const getAllPosts = () => {
+            return instance.get('/post/getAllPost');
+        }
+        const getPostList = async () => {
+            let res = await getAllPosts();
+            console.log("method used")
+            if (res.code === 0) {
+                console.log("gotPosts:" + res.data)
+                console.log("success got posts")
+                posts.value = res.data.map(post => ({
+                    id: post.postId,
+                    image: 'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60', // 你可以根据需要调整图片的处理方式
+                    title: post.title,
+                    description: post.content,
+                    author: `用户${post.userId}`, // 你可以根据需要调整作者的处理方式
+                    date: new Date(post.publishDate).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }),
+                    comments: []
+                }))
+            }
+            else {
+                console.log("failed to get posts")
+            }
+        }
+
+        //调用获取帖子评论接口
+        const getPostComments = (postId) => {
+            return instance.get('comment/getThisPostComments', { params: { postId } });
+        }
+        const getUserById = (id) => {
+            return instance.get('user/getId', { params: { id } });
+        }
+        const selectPost = async (postValue) => {
+            selectedPost.value = postValue;
+            console.log("selectedPostId:" + postValue.id);
+
+            let res = await getPostComments(postValue.id);
+            if (res.code === 0) {
+                console.log("successfully get comments");
+
+                // 使用 Promise.all 处理并发请求来调用getUserById方法，通过id获取userName来展示
+                const commentsWithAuthorPromises = res.data.map(async (comment) => {
+                    let userRes = await getUserById(comment.sendUserId);
+                    if (userRes.code === 0) {
+                        //console.log("successfully get userName:" + userRes.data.userName);
+                        return {
+                            id: comment.commentId,
+                            count: comment.commentCount,
+                            author: userRes.data.userName, // 假设后端返回的数据中有 userName 属性
+                            text: comment.content,
+                            likeCount: comment.likeCount,
+                            replyCount: comment.replyCount,
+                            replies: [],
+                        };
+                    } else {
+                        console.log("failed to get userName");
+                        // 如果获取用户名失败，则使用一个默认值
+                        return {
+                            id: comment.commentId,
+                            count: comment.commentCount,
+                            author: "未知用户",
+                            text: comment.content,
+                            likeCount: comment.likeCount,
+                            replyCount: comment.replyCount,
+                            replies: [],
+                        };
+                    }
+                });
+
+                // 等待所有的 getUserById 请求完成
+                selectedPost.value.comments = await Promise.all(commentsWithAuthorPromises);
+            }
+        };
+
+        const addComment = () => {
+            if (newComment.value.trim()) {
+                selectedPost.value.comments.push({
+                    id: Date.now(),
+                    author: '当前用户',
+                    text: newComment.value,
+                    replies: []
+                });
+                newComment.value = "";
+            }
+        };
+
+        const showReplyInput = (comment, reply = null) => {
+            if (reply) {
+                reply.showReplyInput = true;
+            } else {
+                comment.showReplyInput = true;
+            }
+        };
+
+        const addReply = (comment, reply = null) => {
+            if (reply) {
+                if (reply.newReplyText.trim()) {
+                    reply.replies = reply.replies || [];
+                    reply.replies.push({
+                        id: Date.now(),
+                        author: '当前用户',
+                        text: reply.newReplyText
+                    });
+                    reply.newReplyText = "";
+                    reply.showReplyInput = false;
+                }
+            } else {
+                if (comment.newReplyText.trim()) {
+                    comment.replies.push({
+                        id: Date.now(),
+                        author: '当前用户',
+                        text: comment.newReplyText,
+                        replies: []
+                    });
+                    comment.newReplyText = "";
+                    comment.showReplyInput = false;
+                }
+            }
+        };
+
+        const posts = ref([]);
+
+        onMounted(() => {
+            //alert("created")
+            getPostList()
         })
 
-        const handleUploadSuccess = (file: UploadFile) => {
-            // 模拟上传成功后，将文件信息添加到 images 数组中
-            fileList.value.push(file)
-            post.value.images.push(file.url)
-            console.log("imageUrls:" + post.value.images)
-        }
-
-        const handleRemove = (file: UploadFile) => {
-            // 从 images 数组中移除对应的文件
-            const index = post.value.images.findIndex(image => image === file.url)
-            if (index !== -1) {
-                post.value.images.splice(index, 1)
-            }
-            console.log('图片已删除', post.value.images)
-        }
-
-        const handlePictureCardPreview = (file: UploadFile) => {
-            dialogImageUrl.value = file.url!
-            dialogVisible.value = true
-        }
-
-        const submitPost = () => {
-            // 这里可以添加提交帖子的逻辑，例如发送到后端 API
-            console.log('发布帖子', post.value)
-            //console.log("fileList:",fileList.value)
-            resetForm()
-        }
-
-        const cancelPost = () => {
-            resetForm()
-        }
-
-        const resetForm = () => {
-            showModal.value = false
-            post.value = {
-                title: '',
-                content: '',
-                images: []
-            }
-            fileList.value = []
-        }
+        const image = "https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
 
         return {
-            showModal,
-            dialogImageUrl,
-            dialogVisible,
-            disabled,
-            post,
-            handleUploadSuccess,
-            handleRemove,
-            handlePictureCardPreview,
-            submitPost,
-            cancelPost,
-            resetForm,
-            fileList
+            search,
+            selectedPost,
+            newComment,
+            selectPost,
+            addComment,
+            showReplyInput,
+            addReply,
+            posts,
+            getAllPosts,
+            getPostList,
+            getPostComments,
+            image,
+            isliked,
+            isTyping
         }
     }
 }
+
+
 </script>
 
 <template>
-    <div>
-        <button class="publish-button" @click="showModal = true">发布帖子</button>
+    <div class="common-layout">
+        <el-container>
+            <el-aside class="aside-fixed">
+                <div v-if="selectedPost" class="post-details">
+                    <h2 class="post-title">{{ "测试用例" }}</h2>
+                    <img :src="image" alt="Post Image" class="post-image" />
+                    <p class="post-author">作者: {{ "测试用户" }}</p>
+                    <p class="post-date">发布日期: {{ "2024-07-11" }}</p>
+                    <p class="post-description">{{ "这是一个测试的帖子" }}</p>
 
-        <el-dialog v-model="showModal" width="50%">
-            <template #header>
-                <span>创建帖子</span>
-                <button class="cancel-button" @click="cancelPost">取消</button>
-                <button class="publish-button" @click="submitPost">发布</button>
-            </template>
-
-            <div class="modal-body">
-                <div class="imageUploader">
-                    <el-upload ref="upload" class="upload-demo" list-type="picture-card"
-                        :file-list="fileList" :on-preview="handlePictureCardPreview" :on-remove="handleRemove"
-                        :on-change="handleUploadSuccess" :auto-upload="false">
-                        <el-icon>
-                            <Plus />
-                        </el-icon>
-                    </el-upload>
+                    <div class="comments-section">
+                        <h3>评论</h3>
+                        <div v-for="comment in selectedPost.comments" :key="comment.id" class="comment">
+                            <p class="comment-author">{{ comment.author }}</p>
+                            <p class="comment-text">{{ comment.text }}</p>
+                            <el-button type="text" @click="showReplyInput(comment)">回复</el-button>
+                            <div v-if="comment.replies" class="replies">
+                                <div v-for="reply in comment.replies" :key="reply.id" class="reply">
+                                    <p class="reply-author">{{ reply.author }}</p>
+                                    <p class="reply-text">{{ reply.text }}</p>
+                                    <el-button type="text" @click="showReplyInput(comment, reply)">回复</el-button>
+                                </div>
+                            </div>
+                            <div v-if="comment.showReplyInput" class="reply-input">
+                                <el-input type="textarea" v-model="comment.newReplyText" placeholder="输入回复" rows="2" />
+                                <el-button type="primary" @click="addReply(comment)">提交回复</el-button>
+                            </div>
+                            <div v-for="reply in comment.replies" :key="reply.id" class="reply">
+                                <p class="reply-author">{{ reply.author }}</p>
+                                <p class="reply-text">{{ reply.text }}</p>
+                                <el-button type="text" @click="showReplyInput(comment, reply)">回复</el-button>
+                                <div v-if="reply.showReplyInput" class="reply-input">
+                                    <el-input type="textarea" v-model="reply.newReplyText" placeholder="输入回复"
+                                        rows="2" />
+                                    <el-button type="primary" @click="addReply(comment, reply)">提交回复</el-button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 底部固定的点赞、收藏和评论框 -->
+                        <div v-if="!isTyping">
+                            <div class="bottom-actions">
+                                <el-button type="primary" @click="likePost">
+                                    <div class="img-box" :class="isUp ? 'img-box-check' : ''">
+                                        <img v-if="!isliked" src="../assets/icons/like.png" alt="" class="like-image" />
+                                        <img v-if="isliked" src="../assets/icon/liked.png" alt="" class="liked-image" />
+                                    </div>
+                                </el-button>
+                                <el-button type="warning" @click="favoritePost"><el-icon>
+                                        <Star />
+                                    </el-icon></el-button>
+                                <el-input type="textarea" v-model="newComment" placeholder="输入评论" rows="1"
+                                    @click="isTyping = true" class="comment-input" />
+                                <el-button type="primary" @click="addComment">提交评论</el-button>
+                            </div>
+                        </div>
+                        <div v-if="isTyping">
+                            <div class="new-comment">
+                                <el-input type="textarea" v-model="newComment" placeholder="输入评论" rows="1"
+                                    class="comment-input" />
+                                <el-button type="primary" @click="addComment">发送</el-button>
+                                <el-button type="primary" @click="cancelComment">取消</el-button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
-                <label for="title">标题：</label>
-                <input type="text" v-model="post.title" id="title" />
-
-                <label for="content">内容：</label>
-                <textarea v-model="post.content" id="content"></textarea>
-            </div>
-
-            <el-dialog v-model="dialogVisible">
-                <img width="100%" :src="dialogImageUrl" alt="Preview Image" />
-            </el-dialog>
-        </el-dialog>
+                <div v-else class="no-post-selected">
+                    请选择一个帖子以查看详情
+                </div>
+            </el-aside>
+        </el-container>
     </div>
 </template>
 
-<style>
-body {
+<style scoped>
+/* 全局样式 */
+body,
+html {
+    margin: 0;
+    padding: 0;
     font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
 }
 
-.publish-button {
-    background-color: #FF4D4F;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
+/* 固定顶部搜索框 */
+.fixed-top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    background-color: #fff;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.publish-button:hover {
-    background-color: #FF6F6F;
-}
-
-.cancel-button {
-    background: none;
-    border: none;
-    color: #FF4D4F;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-.modal-body {
+.topBar {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.center-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1;
+}
+
+/* 固定侧边栏 */
+.aside-fixed {
+    position: fixed;
+    top: 60px;
+    bottom: 0;
+    right: 0;
+    width: 45vh;
+    z-index: 20;
+    overflow-y: auto;
+    background-color: #fff;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+}
+
+.posts-container {
+    margin-top: 70px;
+    margin-right: 360px;
+    padding: 10px;
+    height: calc(100vh - 70px);
+    overflow-y: auto;
+}
+
+.posts-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.post-card {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    max-width: 300px;
+    flex: 0 0 auto;
+    background-color: #fff;
+}
+
+.post-image {
+    width: 100%;
+    height: auto;
+}
+
+.post-content {
+    padding: 15px;
+}
+
+.post-title {
+    font-size: 18px;
+    margin: 0 0 10px 0;
+}
+
+.post-description {
+    font-size: 14px;
+    color: #666;
+}
+
+.post-details {
+    padding: 20px;
+}
+
+.post-author,
+.post-date {
+    font-size: 14px;
+    color: #999;
+}
+
+.no-post-selected {
+    font-size: 16px;
+    color: #666;
+    text-align: center;
+    padding: 20px;
+}
+
+/* 评论样式 */
+.comments-section {
     margin-top: 20px;
 }
 
-label {
-    margin-top: 10px;
-    font-size: 14px;
+.comment {
+    margin-bottom: 10px;
+}
+
+.comment-author {
     font-weight: bold;
 }
 
-input[type="text"],
-textarea {
-    width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+.comment-text {
+    margin: 5px 0;
 }
 
-textarea {
+.new-comment {
+    display: flex;
+    align-items: flex-start;
+    margin-top: 10px;
+}
+
+.comment-input {
+    flex: 1;
+    margin-right: 10px;
+}
+
+.el-textarea__inner {
     resize: vertical;
+    /* 允许多行输入框垂直缩放 */
+}
+
+.replies {
+    margin-left: 20px;
+    margin-top: 10px;
+}
+
+.reply {
+    margin-bottom: 5px;
+}
+
+.reply-author {
+    font-weight: bold;
+}
+
+.reply-text {
+    margin: 5px 0;
+}
+
+.reply-input {
+    margin-top: 10px;
+    margin-left: 20px;
+}
+
+.el-button {
+    margin-top: 10px;
+}
+
+.bottom-actions {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 45vh;
+    background-color: #fff;
+    /* padding: 10px 20px; */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #ddd;
+}
+
+/* .img-box {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -25px;
+  margin-top: -25px;
+  width: 50px;
+  height: 50px;
+  margin: 5px;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  -khtml-user-select: none;
+  user-select: none; 
+} */
+
+.img-box{
+    width:20px;
+}
+
+.like-image {
+    width: 20%;
 }
 </style>

@@ -2,7 +2,7 @@ import './assets/main.scss'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import { createApp } from 'vue'
-import App from './views/testPostPage.vue'
+import App from './views/CommunityPage.vue'
 /* import App from './test/mytest1.vue' */
 import pinia from './stores/pinia.js' 
 /* import App from './App.vue' */

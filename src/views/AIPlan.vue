@@ -1,19 +1,17 @@
 <script setup>
 import { ref } from 'vue';
+import instance from '../utils/request.js'
 //表单的可见性
 const dialogVisible = ref(false);
 //对话的可见性
 const conversationVisible = ref(false);
 
+
 //表单模块
 const form = ref({
+    userId: 1,
     planName: '',
-    planTarget: '',
-    spareTime: '',
-    timeSpan: '',
-    preference: '',
-    level: '',
-    resource: ''
+    planDescription: ''
 });
 const openForm = () => { //打开表单
     dialogVisible.value = true;
@@ -24,8 +22,36 @@ const submitForm = () => { //提交表单
     conversationVisible.value = true;
 };
 
+// AI添加计划接口
+const autoAddPlan = (planData) => {
+    return instance.post('/plan/autoAddPlan', planData);
+}
+// 创建历史对话接口
+const addHistoryConversation = (HCData) => {
+    return instance.post('/historyConversation/addHistoryConversation', HCData)
+}
+// AI创建计划
+const AICreatePlan = async () => {
+    let addPlanRes = await autoAddPlan({
+        userId: 1,
+        title: form.planName,
+        description: form.planDescription
+    })
+    let addHCRes = await addHistoryConversation({
+        userId: 1,
+        title: form.planName
+    })
+    if (addPlanRes.code === 0 && addHCRes.code === 0) {
+        console.log("创建成功");
+        dialogVisible.value = false;
+        conversationVisible.value = true;
+    }
+}
+
 //发送消息
-const send = () => { }
+const send = () => {
+
+}
 
 //历史计划
 const historyPlanForm = ref([])
@@ -46,28 +72,13 @@ const historyPlanForm = ref([])
                             <el-form-item label="计划名称">
                                 <el-input v-model="form.planName"></el-input>
                             </el-form-item>
-                            <el-form-item label="计划目标">
-                                <el-input v-model="form.planTarget"></el-input>
-                            </el-form-item>
-                            <el-form-item label="空闲时段">
-                                <el-input v-model="form.spareTime"></el-input>
-                            </el-form-item>
-                            <el-form-item label="计划周期">
-                                <el-input v-model="form.timeSpan"></el-input>
-                            </el-form-item>
-                            <el-form-item label="学习偏好">
-                                <el-input v-model="form.preference"></el-input>
-                            </el-form-item>
-                            <el-form-item label="当前水平">
-                                <el-input v-model="form.level"></el-input>
-                            </el-form-item>
-                            <el-form-item label="现有资源">
-                                <el-input v-model="form.resource"></el-input>
+                            <el-form-item label="计划描述">
+                                <el-input v-model="form.planDescription"></el-input>
                             </el-form-item>
                         </el-form>
                         <template #footer>
                             <el-button @click="dialogVisible = false">取消</el-button>
-                            <el-button type="primary" @click="submitForm">确定</el-button>
+                            <el-button type="primary" @click="AICreatePlan">确定</el-button>
                         </template>
                     </el-dialog>
                 </div>

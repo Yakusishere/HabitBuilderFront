@@ -188,6 +188,13 @@ export default {
                     <p class="post-author">作者: {{ selectedPost.author }}</p>
                     <p class="post-date">发布日期: {{ selectedPost.date }}</p>
                     <p class="post-description">{{ selectedPost.description }}</p>
+
+                    <!-- 点赞和收藏按钮 -->
+                    <div class="post-actions">
+                        <el-button type="primary" @click="likePost">点赞</el-button>
+                        <el-button type="warning" @click="favoritePost">收藏</el-button>
+                    </div>
+
                     <div class="comments-section">
                         <h3>评论</h3>
                         <div v-for="comment in selectedPost.comments" :key="comment.id" class="comment">
@@ -222,6 +229,7 @@ export default {
                         </div>
                     </div>
                 </div>
+
                 <div v-else class="no-post-selected">
                     请选择一个帖子以查看详情
                 </div>
