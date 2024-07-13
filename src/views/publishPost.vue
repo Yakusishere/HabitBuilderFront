@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { UploadFile } from 'element-plus'
 import instance from '@/utils/request';
 import { RefSymbol } from '@vue/reactivity';
+import { tr } from 'element-plus/es/locale';
 
 export default {
     name: 'test',
@@ -19,11 +20,34 @@ export default {
             images: [] //储存图片url
         })
 
-        const handleUploadSuccess = (file: UploadFile) => {
-            // 模拟上传成功后，将文件信息添加到 images 数组中
-            fileList.value.push(file)
-            post.value.images.push(file.url)
-            console.log("imageUrls:" + post.value.images)
+        //调用上传接口
+        const postUploadFile = (formData) =>{
+            return instance.post('/post/upload', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+        }
+        const handleUpload = async(file: UploadFile) => {
+            fileList.value.push(file);
+            const formData = new FormData();
+            formData.append('image', file.raw);
+            try{
+                let res ;
+                res = await postUploadFile(formData);
+                if(res.code == 0){
+                    console.log("成功上传图片");
+                    let myImageUrl = "";
+                    myImageUrl = res.data;
+                    post.value.images.push(myImageUrl);
+                }
+                else{
+                    console.log("上传失败");
+                }
+            }catch (error) {
+                console.error('Error uploading file:', error);
+                alert('Error uploading file');
+            }
         }
 
         const handleRemove = (file: UploadFile) => {
@@ -90,7 +114,7 @@ export default {
             dialogVisible,
             disabled,
             post,
-            handleUploadSuccess,
+            handleUpload,
             handleRemove,
             handlePictureCardPreview,
             submitPost,
@@ -118,7 +142,7 @@ export default {
                 <div class="imageUploader">
                     <el-upload ref="upload" class="upload-demo" list-type="picture-card" :file-list="fileList"
                         :on-preview="handlePictureCardPreview" :on-remove="handleRemove"
-                        :on-change="handleUploadSuccess" :auto-upload="false">
+                        :on-change="handleUpload" :auto-upload="false">
                         <el-icon>
                             <Plus />
                         </el-icon>

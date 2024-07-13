@@ -1,18 +1,19 @@
 <script setup>
-import { ref } from 'vue';
-import instance from '../utils/request.js'
+import { onMounted, ref } from 'vue';
+import instance from '../utils/request.js';
+
 //表单的可见性
 const dialogVisible = ref(false);
 //对话的可见性
 const conversationVisible = ref(false);
 
-
 //表单模块
 const form = ref({
     userId: 1,
-    planName: '',
-    planDescription: ''
+    planName: "",
+    planDescription: ""
 });
+
 const openForm = () => { //打开表单
     dialogVisible.value = true;
 };
@@ -23,38 +24,75 @@ const submitForm = () => { //提交表单
 };
 
 // AI添加计划接口
-const autoAddPlan = (planData) => {
-    return instance.post('/plan/autoAddPlan', planData);
+const autoAddPlan = (data) => {
+    return instance.post('/plan/autoAddPlan', data);
 }
 // 创建历史对话接口
 const addHistoryConversation = (HCData) => {
-    return instance.post('/historyConversation/addHistoryConversation', HCData)
+    return instance.post('/historyConversation/addHistoryConversation', HCData);
 }
 // AI创建计划
-const AICreatePlan = async () => {
+const AICreatePlanOnClick = async () => {
     let addPlanRes = await autoAddPlan({
-        userId: 1,
-        title: form.planName,
-        description: form.planDescription
-    })
+        userId: form.value.userId,
+        title: form.value.planName,
+        description: form.value.planDescription
+    });
     let addHCRes = await addHistoryConversation({
         userId: 1,
-        title: form.planName
-    })
+        title: form.value.planName
+    });
     if (addPlanRes.code === 0 && addHCRes.code === 0) {
         console.log("创建成功");
         dialogVisible.value = false;
         conversationVisible.value = true;
     }
-}
+};
 
 //发送消息
-const send = () => {
+const AISendMessage = (formData) => {
+  return instance.post('/conversation/AI', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+};
 
-}
+const message = ref(''); // 添加一个用于存储消息内容的变量
+const userQuestion =ref([]);
+const AIAnswer = ref([]);
+
+const sendMessage = async () => {
+  if (!message.value.trim()) {
+    console.warn('消息内容不能为空');
+    return;
+  }
+
+  
+};
 
 //历史计划
-const historyPlanForm = ref([])
+const historyConversationForm = ref([]);
+const getHistoryConversationByUserId = (userId) => {
+    return instance.get('/historyConversation/getHistoryConversationByUserId', { params: { userId } });
+};
+const updatehistoryConversationForm = async () => {
+    let response = await getHistoryConversationByUserId(1);
+    if (response.data) {
+        historyConversationForm.value = response.data.map(item => ({
+            ...item,
+            createTime: item.createTime.split('T')[0] // 只保留日期部分
+        }));
+    }
+};
+updatehistoryConversationForm();
+
+// 处理历史计划点击事件
+const handleHistoryClick = (history) => {
+    dialogVisible.value = false;
+    conversationVisible.value = true;
+    console.log("Selected History Plan:", history);
+}
 </script>
 
 <template>
@@ -78,7 +116,7 @@ const historyPlanForm = ref([])
                         </el-form>
                         <template #footer>
                             <el-button @click="dialogVisible = false">取消</el-button>
-                            <el-button type="primary" @click="AICreatePlan">确定</el-button>
+                            <el-button type="primary" @click="AICreatePlanOnClick">确定</el-button>
                         </template>
                     </el-dialog>
                 </div>
@@ -88,17 +126,19 @@ const historyPlanForm = ref([])
                     <div class="message-box">
                         <input v-model="message" @keyup.enter="sendMessage" type="text" placeholder="Type your message"
                             class="message-input" />
-                        <button @click="send" class="send-button">发送</button>
+                        <button @click="sendMessage" class="send-button">发送</button>
                     </div>
                 </div>
             </el-main>
 
             <el-aside width="200px">
-                <h1>
-                    历史计划
-                </h1>
+                <h1>历史计划</h1>
                 <div class="historyPlanForm">
-                    <el-form :model="historyPlanForm">
+                    <el-form>
+                        <el-form-item v-for="(history, index) in historyConversationForm" :key="index"
+                            @click="handleHistoryClick(history)">
+                            <span>{{ history.createTime }}: {{ history.title }}</span>
+                        </el-form-item>
                     </el-form>
                 </div>
             </el-aside>
@@ -123,9 +163,7 @@ const historyPlanForm = ref([])
     bottom: 0;
     left: 0;
     width: 100%;
-    /* background-color: #f1f1f1; */
     padding: 10px;
-    /* box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); */
     display: flex;
     justify-content: center;
 }

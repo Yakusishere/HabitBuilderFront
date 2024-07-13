@@ -15,6 +15,11 @@ export default {
         const search = ref("");
         const selectedPost = ref(null);
         const newComment = ref("");
+        const posts = ref([]);
+
+        const isliked = ref(false)
+        const isFav = ref(false)
+        const isTyping = ref(false)//查看是否在打字
 
         //调用获取所有帖子接口
         const getAllPosts = () => {
@@ -28,7 +33,7 @@ export default {
                 console.log("success got posts")
                 posts.value = res.data.map(post => ({
                     id: post.postId,
-                    image: 'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60', // 你可以根据需要调整图片的处理方式
+                    image: post.images, // 你可以根据需要调整图片的处理方式
                     title: post.title,
                     description: post.content,
                     author: `用户${post.userId}`, // 你可以根据需要调整作者的处理方式
@@ -43,14 +48,69 @@ export default {
 
         //调用获取帖子评论接口
         const getPostComments = (postId) => {
-            return instance.get('comment/getThisPostComments', { params: { postId } });
+            return instance.get('/comment/getThisPostComments', { params: { postId } });
         }
+        //根据id查找用户名接口
         const getUserById = (id) => {
-            return instance.get('user/getId', { params: { id } });
+            return instance.get('/user/getId', { params: { id } });
         }
+        //是否点赞帖子接口
+        const getIfLikePost = (userId, postId) => {
+            console.log("getIfLikePost:" + userId + "," + postId);
+            // 创建一个 FormData 对象
+            const formData = new FormData();
+            formData.append('userId', userId);
+            formData.append('postId', postId);
+
+            // 发送请求
+            return instance.post('/likepost/getIfLikePost', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+        }
+        //是否收藏帖子
+        const getIfCollectPost = (userId, postId) => {
+            console.log("getIfCollectPost:" + userId + "," + postId);
+            // 创建一个 FormData 对象
+            const formData = new FormData();
+            formData.append('userId', userId);
+            formData.append('postId', postId);
+
+            // 发送请求
+            return instance.post('/collectpost/getPostCollection', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+        }
+        //选择帖子（重要！）
         const selectPost = async (postValue) => {
             selectedPost.value = postValue;
             console.log("selectedPostId:" + postValue.id);
+
+            //判断用户是否点赞、收藏帖子
+            let ifLikeRes = await getIfLikePost(1, selectedPost.value.id);
+            let ifFavRes = await getIfCollectPost(1, selectedPost.value.id);
+            if (ifLikeRes.code === 0 && ifFavRes.code === 0) {
+                console.log("成功获取是否点赞、收藏帖子");
+                if (ifLikeRes.message === "true") {
+                    console.log("已点赞");
+                    isliked.value = true;
+                }
+                else if (ifLikeRes.message === "false") {
+                    console.log("未点赞");
+                    isliked.value = false;
+                }
+                if (ifFavRes.message === "true") {
+                    console.log("已收藏");
+                    isFav.value = true;
+                }
+                else if (ifFavRes.message === "false") {
+                    console.log("未收藏");
+                    isFav.value = false;
+                }
+            }
 
             let res = await getPostComments(postValue.id);
             if (res.code === 0) {
@@ -89,6 +149,50 @@ export default {
                 selectedPost.value.comments = await Promise.all(commentsWithAuthorPromises);
             }
         };
+
+        //调用点赞帖子接口
+        const addLikePost = (data) => {
+            return instance.post("/likepost/addLikePost", data);
+        }
+        const likePost = async () => {
+            console.log("调用likePost方法")
+            let likeRelation = ref({
+                "userId": 1,//记得改
+                "postId": selectedPost.value.id
+            })
+            console.log("likeRelation:" + likeRelation.value.userId + likeRelation.value.postId)
+            let res = await addLikePost(likeRelation.value);
+            if (res.code === 0) {
+                console.log("点赞成功")
+                isliked.value = true;
+            }
+            else {
+                console.log("点赞失败")
+            }
+        }
+        /* //取消点赞
+        const deleteLikePost = () =>{
+
+        } */
+
+        const addCollectPost = (data) => {
+            return instance.post('/collectpost/addCollection', data);
+        }
+        const collectPost = async () => {
+            console.log("收藏帖子");
+            let collectRelation = ref({
+                "userId": 1,
+                "postId": selectedPost.value.id
+            })
+            let res = await addCollectPost(collectRelation.value);
+            if (res.code === 0) {
+                console.log("收藏成功")
+                isFav.value = true;
+            }
+            else {
+                console.log("点赞失败")
+            }
+        }
 
         const addComment = () => {
             if (newComment.value.trim()) {
@@ -136,7 +240,7 @@ export default {
             }
         };
 
-        const posts = ref([]);
+
 
         onMounted(() => {
             //alert("created")
@@ -154,7 +258,12 @@ export default {
             posts,
             getAllPosts,
             getPostList,
-            getPostComments
+            getPostComments,
+            isliked,
+            isFav,
+            isTyping,
+            likePost,
+            collectPost
         }
     }
 }
@@ -168,7 +277,7 @@ export default {
             <el-main>
                 <div class="topBar fixed-top-bar">
                     <div class="center-container">
-                        <el-input :prefix-icon="Search" placeholder="输入搜索内容" clearable v-model="search"
+                        <el-input :prefix-icon="search" placeholder="输入搜索内容" clearable v-model="search"
                             style="width: 240px" size="large"></el-input>
                         <el-button class="button" type="primary" auto-insert-space>搜索</el-button>
                         <PublishPost />
@@ -188,12 +297,6 @@ export default {
                     <p class="post-author">作者: {{ selectedPost.author }}</p>
                     <p class="post-date">发布日期: {{ selectedPost.date }}</p>
                     <p class="post-description">{{ selectedPost.description }}</p>
-
-                    <!-- 点赞和收藏按钮 -->
-                    <div class="post-actions">
-                        <el-button type="primary" @click="likePost">点赞</el-button>
-                        <el-button type="warning" @click="favoritePost">收藏</el-button>
-                    </div>
 
                     <div class="comments-section">
                         <h3>评论</h3>
@@ -223,9 +326,41 @@ export default {
                                 </div>
                             </div>
                         </div>
-                        <div class="new-comment">
-                            <el-input type="textarea" v-model="newComment" placeholder="输入评论" rows="3" />
-                            <el-button type="primary" @click="addComment">提交评论</el-button>
+                        <!-- 底部固定的点赞、收藏和评论框 -->
+                        <div v-if="!isTyping">
+                            <div class="bottom-actions">
+                                <el-input type="textarea" v-model="newComment" placeholder="输入评论" rows="1"
+                                    @click="isTyping = true" class="comment-input" />
+                                <el-button type="primary" @click="addComment">提交评论</el-button>
+                                <el-button v-if="!isliked" type="primary" @click="likePost">
+                                    <div class="img-box">
+                                        <img src="../assets/icons/like.png" alt="" class="like-image">
+                                    </div>
+                                </el-button>
+                                <el-button v-if="isliked" type="primary"> <!-- @click 取消点赞 -->
+                                    <div class="img-box">
+                                        <img src="../assets/icons/liked.png" alt="" class="like-image" />
+                                    </div>
+                                </el-button>
+                                <el-button v-if="!isFav" type="primary" @click="collectPost">
+                                    <div class="img-box">
+                                        <img src="../assets/icons/fav.png" alt="" class="like-image">
+                                    </div>
+                                </el-button>
+                                <el-button v-if="isFav" type="primary"> <!-- @click取消收藏 -->
+                                    <div class="img-box">
+                                        <img src="../assets/icons/faved.png" alt="" class="like-image">
+                                    </div>
+                                </el-button>
+                            </div>
+                        </div>
+                        <div v-if="isTyping">
+                            <div class="new-comment">
+                                <el-input type="textarea" v-model="newComment" placeholder="输入评论" rows="1"
+                                    class="comment-input" />
+                                <el-button type="primary" @click="addComment">发送</el-button>
+                                <el-button type="primary" @click="isTyping = false">取消</el-button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -279,7 +414,7 @@ html {
     top: 60px;
     bottom: 0;
     right: 0;
-    width: 350px;
+    width: 45vh;
     z-index: 20;
     overflow-y: auto;
     background-color: #fff;
@@ -366,7 +501,14 @@ html {
 }
 
 .new-comment {
+    display: flex;
+    align-items: flex-start;
     margin-top: 10px;
+}
+
+.comment-input {
+    flex: 1;
+    margin-right: 10px;
 }
 
 .replies {
@@ -393,5 +535,26 @@ html {
 
 .el-button {
     margin-top: 10px;
+}
+
+.bottom-actions {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 45vh;
+    background-color: #fff;
+    /* padding: 10px 20px; */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #ddd;
+}
+
+.img-box {
+    width: 20px;
+}
+
+.like-image {
+    width: 100%;
 }
 </style>

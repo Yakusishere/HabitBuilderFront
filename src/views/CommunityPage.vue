@@ -33,7 +33,7 @@ export default {
                 console.log("success got posts")
                 posts.value = res.data.map(post => ({
                     id: post.postId,
-                    image: 'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60', // 你可以根据需要调整图片的处理方式
+                    image: post.images, // 你可以根据需要调整图片的处理方式
                     title: post.title,
                     description: post.content,
                     author: `用户${post.userId}`, // 你可以根据需要调整作者的处理方式
@@ -69,14 +69,31 @@ export default {
                 }
             });
         }
+        //是否收藏帖子
+        const getIfCollectPost = (userId, postId) => {
+            console.log("getIfCollectPost:" + userId + "," + postId);
+            // 创建一个 FormData 对象
+            const formData = new FormData();
+            formData.append('userId', userId);
+            formData.append('postId', postId);
+
+            // 发送请求
+            return instance.post('/collectpost/getPostCollection', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+        }
         //选择帖子（重要！）
         const selectPost = async (postValue) => {
             selectedPost.value = postValue;
             console.log("selectedPostId:" + postValue.id);
 
+            //判断用户是否点赞、收藏帖子
             let ifLikeRes = await getIfLikePost(1, selectedPost.value.id);
-            if (ifLikeRes.code === 0) {
-                console.log("成功获取是否点赞帖子");
+            let ifFavRes = await getIfCollectPost(1, selectedPost.value.id);
+            if (ifLikeRes.code === 0 && ifFavRes.code === 0) {
+                console.log("成功获取是否点赞、收藏帖子");
                 if (ifLikeRes.message === "true") {
                     console.log("已点赞");
                     isliked.value = true;
@@ -84,6 +101,14 @@ export default {
                 else if (ifLikeRes.message === "false") {
                     console.log("未点赞");
                     isliked.value = false;
+                }
+                if (ifFavRes.message === "true") {
+                    console.log("已收藏");
+                    isFav.value = true;
+                }
+                else if (ifFavRes.message === "false") {
+                    console.log("未收藏");
+                    isFav.value = false;
                 }
             }
 
@@ -150,7 +175,24 @@ export default {
 
         } */
 
-        
+        const addCollectPost = (data) => {
+            return instance.post('/collectpost/addCollection', data);
+        }
+        const collectPost = async () => {
+            console.log("收藏帖子");
+            let collectRelation = ref({
+                "userId": 1,
+                "postId": selectedPost.value.id
+            })
+            let res = await addCollectPost(collectRelation.value);
+            if (res.code === 0) {
+                console.log("收藏成功")
+                isFav.value = true;
+            }
+            else {
+                console.log("点赞失败")
+            }
+        }
 
         const addComment = () => {
             if (newComment.value.trim()) {
@@ -220,7 +262,8 @@ export default {
             isliked,
             isFav,
             isTyping,
-            likePost
+            likePost,
+            collectPost
         }
     }
 }
@@ -290,18 +333,25 @@ export default {
                                     @click="isTyping = true" class="comment-input" />
                                 <el-button type="primary" @click="addComment">提交评论</el-button>
                                 <el-button v-if="!isliked" type="primary" @click="likePost">
-                                    <div class="img-box" :class="isUp ? 'img-box-check' : ''">
+                                    <div class="img-box">
                                         <img src="../assets/icons/like.png" alt="" class="like-image">
                                     </div>
                                 </el-button>
-                                <el-button v-if="isliked" type="primary" @click="likePost">
-                                    <div class="img-box" :class="isUp ? 'img-box-check' : ''">
+                                <el-button v-if="isliked" type="primary"> <!-- @click 取消点赞 -->
+                                    <div class="img-box">
                                         <img src="../assets/icons/liked.png" alt="" class="like-image" />
                                     </div>
                                 </el-button>
-                                <el-button type="warning" @click="favoritePost"><el-icon>
-                                        <Star />
-                                    </el-icon></el-button>
+                                <el-button v-if="!isFav" type="primary" @click="collectPost">
+                                    <div class="img-box">
+                                        <img src="../assets/icons/fav.png" alt="" class="like-image">
+                                    </div>
+                                </el-button>
+                                <el-button v-if="isFav" type="primary"> <!-- @click取消收藏 -->
+                                    <div class="img-box">
+                                        <img src="../assets/icons/faved.png" alt="" class="like-image">
+                                    </div>
+                                </el-button>
                             </div>
                         </div>
                         <div v-if="isTyping">
