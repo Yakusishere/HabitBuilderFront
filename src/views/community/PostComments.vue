@@ -8,9 +8,10 @@ export default {
       required: true,
     },
   },
-  setup(props) {
+  setup(props, { expose }) {
     //const postId = ref();
     const comments = ref([]);
+    const isTypingReply = ref(false);
 
     const getThisPostComments = (postId) => {
       console.log("父组件传入的postId:" + postId);
@@ -42,10 +43,15 @@ export default {
       getComments();
     });
 
+    expose({
+        isTypingReply
+    })
+
     return {
       comments,
+      isTypingReply
     };
-  }
+  },
 };
 </script>
 
@@ -67,7 +73,7 @@ export default {
         <!-- 点赞和回复 -->
         <p class="actions">
           <button>点赞</button> {{ commentThread[0].likeCount }}
-          <button>回复</button> {{ commentThread.length - 1 }}
+          <button @click="isTypingReply.value = true">回复</button> {{ commentThread.length - 1 }}
         </p>
       </div>
       <!-- 回复 -->

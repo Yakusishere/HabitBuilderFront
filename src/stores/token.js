@@ -10,7 +10,7 @@ export const useTokenStore=defineStore('token',()=>{
     //定义状态内容
     //1.定义响应式变量
     const token=ref({
-        userId,
+        userId: null, 
     })
     //2.定义一个函数，修改token的值
     const setToken=(newToken)=>{

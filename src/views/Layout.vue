@@ -6,6 +6,9 @@ import {
   UserFilled,
 } from "@element-plus/icons-vue";
 import instance from "@/utils/request.js";
+import useUserInfoStore from "@/stores/userInfo.js";
+import { onMounted } from "vue";
+
 const handleOpen = (key: string, keyPath: string[]) => {
   console.log(key, keyPath);
 };
@@ -19,19 +22,26 @@ const handleClose = (key: string, keyPath: string[]) => {
 const userInfoService = (id:any) => {
   return instance.get("/user/getId",{params:{id}});
 };
-import useUserInfoStore from "@/stores/userInfo.js";
+
 const userInfoStore = useUserInfoStore();
+
 //调用函数，获取用户详细信息
 const getUserInfo = async () => {
   //调用接口
   /////////////////////et result = await userInfoService(userId);
   //console.log("LayoutUserId:"+userInfoStore.info.userId);
   let result = await userInfoService(userInfoStore.info.userId);
-  //console.log("resultUserName:"+result.data.userName)
+  console.log("resultAvatarImg:"+result.data.avatarImg)
   //数据存储到pinia中
   userInfoStore.setInfo(result.data);
+  console.log("pinia中的avatarImg:"+userInfoStore.info.avatarImg);
+  const url = userInfoStore.info.avatarImg
 };
 getUserInfo();
+
+/* const getImgInfo = async()=>{
+  let res =  await 
+} */
 </script>
 
 <template>
@@ -42,7 +52,7 @@ getUserInfo();
         <el-row class="tac">
           <el-col :span="24">
             <div class="avatar-text-container">
-              <el-avatar :size="50" src="userInfoStore.info.avatarImg?userInfoStore.info.avatarImg:UserFilled" />
+              <el-avatar :size="50" :src="userInfoStore.info.avatarImg" />
               <!-- <el-avatar :size="50" src="" /> -->
               <el-text class="grades">积分</el-text>
             </div>

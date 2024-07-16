@@ -1,161 +1,437 @@
-<script setup>
-import { User, Lock } from "@element-plus/icons-vue";
-import { ref } from "vue";
-import instance from "@/utils/request.js";
+<script>
+import { Search } from "@element-plus/icons-vue";
+import { ref, onMounted, watch } from "vue";
+import instance from "@/utils/request";
+import useUserInfoStore from "@/stores/userInfo.js";
 
-const isRegister = ref(false);
+import PostCard from "./community/CardPost.vue";
+import PublishPost from "./community/publishPost.vue";
+import test from "./test.vue";
+import test3 from "./test3.vue";
 
-// 定义数据模型
-const registerData = ref({
-  userName: "",
-  password: "",
-});
+export default {
+  name: "communityPage",
+  components: {
+    test,
+    test3,
+    PostCard,
+    PublishPost,
+  },
+  setup() {
+    const search = ref("");
+    const selectedPost = ref(null);
+    const newComment = ref("");
+    const posts = ref([]);
+    const userInfoStore = useUserInfoStore();
+    const isliked = ref(false);
+    const isFav = ref(false);
+    const isTyping = ref(false); //查看是否在打字
 
-const loginData = ref({
-  userName: "",
-  password: "",
-});
+    watch(selectedPost, (newValue) => {
+      console.log("selectedPost has changed to:", newValue.id);
+      // 这里可以添加其他需要在selectedPost变化时执行的逻辑
+    });
 
-// 定义表单校验规则
-const rules = {
-  userName: [
-    { required: true, message: "请输入用户名", trigger: "blur" },
-    { max: 16, message: "用户名最大只可输入16个字符", trigger: "blur" },
-  ],
-  password: [
-    { required: true, message: "请输入密码", trigger: "blur" },
-    { min: 5, max: 16, message: "密码为5~16个字符", trigger: "blur" },
-  ],
-};
+    //调用获取所有帖子接口
+    const getAllPosts = () => {
+      return instance.get("/post/getAllPost");
+    };
+    //调用获取帖子评论接口
+    const getPostComments = (postId) => {
+      return instance.get("/comment/getThisPostComments", {
+        params: { postId },
+      });
+    };
+    //根据id查找用户名接口
+    const getUserById = (id) => {
+      return instance.get("/user/getId", { params: { id } });
+    };
 
-// 提供调用登录接口的函数
-const userLoginService = (loginData) => {
-  return instance.post("/user/login", loginData);
-};
+    const getPostList = async () => {
+      let res = await getAllPosts();
+      console.log("method used");
+      if (res.code === 0) {
+        console.log("gotPosts:" + res.data);
+        console.log("success got posts");
+        posts.value = res.data.map((post) => ({
+          id: post.postId,
+          image: post.image, // 你可以根据需要调整图片的处理方式
+          title: post.title,
+          description: post.content,
+          author: `用户${post.userId}`, // 你可以根据需要调整作者的处理方式
+          date: new Date(post.publishDate).toLocaleDateString("zh-CN", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
+        }));
+      } else {
+        console.log("failed to get posts");
+      }
+    };
 
-// 登录函数
-import { useTokenStore } from "@/stores/token.js";
-import { useRouter } from "vue-router";
-const router = useRouter();
-const tokenStore = useTokenStore();
+    //选择帖子
+    const selectPost = async (postValue) => {
+      selectedPost.value = postValue;
+      console.log("selectedPostId:" + selectedPost.value.id);
+      getCommentListOnClick();
+    };
 
-const login = async () => {
-  try {
-    let result = await userLoginService(registerData.value);
-    if (result.code === 0) {
-      //tokenStore.setToken(result.data.data);
-      alert("success")
-      router.push("/");
-    } else {
-      alert("登录失败，未返回有效数据");
-    }
-  } catch (error) {
-    console.error(
-      "Login Error: ",
-      error.response ? error.response.data : error.message
-    );
-    alert(
-      "Error: " + (error.response ? error.response.data.message : error.message)
-    );
-  }
-};
+    // 获取评论列表
+    const getCommentListOnClick = async () => {
+      let res;
+      res = await getPostComments(selectedPost.value.id);
+      if (res.code === 0) {
+        console.log("获取评论列表成功");
+        selectedPost.comments = res.data;
+      } else if (res.code === 1) {
+        console.log("获取评论列表失败");
+      }
+    };
 
-// 定义函数，用来清空数据模型的数据
-const clearRegisterData = () => {
-  registerData.value = {
-    userName: "",
-    password: "",
-  };
+    const likePost = async () => {
+      console.log("调用likePost方法");
+      let likeRelation = ref({
+        userId: userInfoStore.info.userId, //记得改
+        postId: selectedPost.value.id,
+      });
+      console.log(
+        "likeRelation:" + likeRelation.value.userId + likeRelation.value.postId
+      );
+      let res = await addLikePost(likeRelation.value);
+      if (res.code === 0) {
+        console.log("点赞成功");
+        isliked.value = true;
+      } else {
+        console.log("点赞失败");
+      }
+    };
+
+    const collectPost = async () => {
+      console.log("收藏帖子");
+      let collectRelation = ref({
+        userId: 1,
+        postId: selectedPost.value.id,
+      });
+      let res = await addCollectPost(collectRelation.value);
+      if (res.code === 0) {
+        console.log("收藏成功");
+        isFav.value = true;
+      } else {
+        console.log("点赞失败");
+      }
+    };
+
+    const addComment = () => {
+      if (newComment.value.trim()) {
+        selectedPost.value.comments.push({
+          id: Date.now(),
+          author: "当前用户",
+          text: newComment.value,
+          replies: [],
+        });
+        newComment.value = "";
+      }
+    };
+
+    const showReplyInput = (comment, reply = null) => {
+      if (reply) {
+        reply.showReplyInput = true;
+      } else {
+        comment.showReplyInput = true;
+      }
+    };
+
+    const addReply = (comment, reply = null) => {
+      if (reply) {
+        if (reply.newReplyText.trim()) {
+          reply.replies = reply.replies || [];
+          reply.replies.push({
+            id: Date.now(),
+            author: "当前用户",
+            text: reply.newReplyText,
+          });
+          reply.newReplyText = "";
+          reply.showReplyInput = false;
+        }
+      } else {
+        if (comment.newReplyText.trim()) {
+          comment.replies.push({
+            id: Date.now(),
+            author: "当前用户",
+            text: comment.newReplyText,
+            replies: [],
+          });
+          comment.newReplyText = "";
+          comment.showReplyInput = false;
+        }
+      }
+    };
+
+    onMounted(() => {
+      //alert("created")
+      getPostList();
+    });
+
+    return {
+      search,
+      selectedPost,
+      newComment,
+      selectPost,
+      addComment,
+      showReplyInput,
+      addReply,
+      posts,
+      getAllPosts,
+      getPostList,
+      getPostComments,
+      isliked,
+      isFav,
+      isTyping,
+      likePost,
+      collectPost,
+    };
+  },
 };
 </script>
 
 <template>
-  <el-row class="login-page">
-    <el-col :span="12" class="bg"></el-col>
-    <el-col :span="6" :offset="3" class="form">
-      <!-- 登录表单 -->
-      <el-form
-        ref="form"
-        size="large"
-        autocomplete="off"
-        v-if="!isRegister"
-        :model="registerData"
-        :rules="rules"
-      >
-        <el-form-item>
-          <h1>登录</h1>
-        </el-form-item>
-        <el-form-item>
-          <el-input
-            :prefix-icon="User"
-            placeholder="请输入用户名"
-            v-model="registerData.userName"
-          ></el-input>
-        </el-form-item>
-        <el-form-item>
-          <el-input
-            :prefix-icon="Lock"
-            type="password"
-            placeholder="请输入密码"
-            v-model="registerData.password"
-          ></el-input>
-        </el-form-item>
-        <el-form-item class="flex">
-          <div class="flex">
-            <el-checkbox>记住我</el-checkbox>
-            <el-link type="primary" :underline="false">忘记密码？</el-link>
+  <div class="common-layout">
+    <el-container>
+      <el-main>
+        <div class="topBar fixed-top-bar">
+          <div class="center-container">
+            <el-input
+              :prefix-icon="search"
+              placeholder="输入搜索内容"
+              clearable
+              v-model="search"
+              style="width: 240px"
+              size="large"
+            ></el-input>
+            <el-button class="button" type="primary" auto-insert-space
+              >搜索</el-button
+            >
+            <PublishPost />
           </div>
-        </el-form-item>
-        <!-- 登录按钮 -->
-        <el-form-item>
-          <el-button
-            class="button"
-            type="primary"
-            auto-insert-space
-            @click="login"
-          >
-            登录
-          </el-button>
-        </el-form-item>
-        <el-form-item class="flex">
-          <el-link> 注册 → </el-link>
-        </el-form-item>
-      </el-form>
-    </el-col>
-  </el-row>
+        </div>
+        <div class="posts-container">
+          <div class="posts-wrapper">
+            <PostCard
+              v-for="post in posts"
+              :key="post.id"
+              :image="post.image"
+              :title="post.title"
+              :description="post.description"
+              @click="selectPost(post)"
+            />
+          </div>
+        </div>
+      </el-main>
+      <el-aside class="aside-fixed">
+        <div v-if="selectedPost" class="post-details">
+          <h2 class="post-title">{{ selectedPost.title }}</h2>
+          <img :src="selectedPost.image" alt="Post Image" class="post-image" />
+          <p class="post-author">作者: {{ selectedPost.author }}</p>
+          <p class="post-date">发布日期: {{ selectedPost.date }}</p>
+          <p class="post-description">{{ selectedPost.description }}</p>
+
+          <div class="comments-section">
+            <h3>评论</h3>
+            <test :postId="selectedPost.id" />
+            <!-- 底部固定的点赞、收藏和评论框 -->
+            <test3 :postId="selectedPost.id" />
+          </div>
+        </div>
+
+        <div v-else class="no-post-selected">请选择一个帖子以查看详情</div>
+      </el-aside>
+    </el-container>
+  </div>
 </template>
-  
 
-<style lang="scss" scoped>
-/* 样式 */
-.login-page {
-  height: 100vh;
+<style scoped>
+/* 全局样式 */
+body,
+html {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f5f5f5;
+}
+
+/* 固定顶部搜索框 */
+.fixed-top-bar {
+  position: fixed;
+  top: 0;
+  left: 20vh;
+  right: 0;
+  /* z-index: 10; */
   background-color: #fff;
+  padding: 10px;
+  /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); */
+}
 
-  .bg {
-    background: url("@/assets/login_bg.png") no-repeat center / cover;
-    border-radius: 0 20px 20px 0;
-  }
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
-  .form {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    user-select: none;
+.center-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+}
 
-    .title {
-      margin: 0 auto;
-    }
+/* 固定侧边栏 */
+.aside-fixed {
+  position: fixed;
+  top: 60px;
+  bottom: 0;
+  right: 0;
+  width: 45vh;
+  z-index: 20;
+  overflow-y: auto;
+  background-color: #fff;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
 
-    .button {
-      width: 100%;
-    }
+.posts-container {
+  margin-top: 70px;
+  margin-right: 360px;
+  padding: 10px;
+  height: calc(100vh - 70px);
+  overflow-y: auto;
+}
 
-    .flex {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-    }
-  }
+.posts-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+}
+
+.post-card {
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  max-width: 300px;
+  flex: 0 0 auto;
+  background-color: #fff;
+}
+
+.post-image {
+  width: 100%;
+  height: auto;
+}
+
+.post-content {
+  padding: 15px;
+}
+
+.post-title {
+  font-size: 18px;
+  margin: 0 0 10px 0;
+}
+
+.post-description {
+  font-size: 14px;
+  color: #666;
+}
+
+.post-details {
+  padding: 20px;
+}
+
+.post-author,
+.post-date {
+  font-size: 14px;
+  color: #999;
+}
+
+.no-post-selected {
+  font-size: 16px;
+  color: #666;
+  text-align: center;
+  padding: 20px;
+}
+
+/* 评论样式 */
+.comments-section {
+  margin-top: 20px;
+}
+
+.comment {
+  margin-bottom: 10px;
+}
+
+.comment-author {
+  font-weight: bold;
+}
+
+.comment-text {
+  margin: 5px 0;
+}
+
+.new-comment {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 10px;
+}
+
+.comment-input {
+  flex: 1;
+  margin-right: 10px;
+}
+
+.replies {
+  margin-left: 20px;
+  margin-top: 10px;
+}
+
+.reply {
+  margin-bottom: 5px;
+}
+
+.reply-author {
+  font-weight: bold;
+}
+
+.reply-text {
+  margin: 5px 0;
+}
+
+.reply-input {
+  margin-top: 10px;
+  margin-left: 20px;
+}
+
+.el-button {
+  margin-top: 10px;
+}
+
+.bottom-actions {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 45vh;
+  background-color: #fff;
+  /* padding: 10px 20px; */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #ddd;
+}
+
+.img-box {
+  width: 20px;
+}
+
+.like-image {
+  width: 100%;
 }
 </style>

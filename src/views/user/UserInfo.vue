@@ -1,11 +1,13 @@
-<script lang=ts setup>
+<script lang="ts" setup>
+import { onMounted } from 'vue';
 import instance from "@/utils/request.js";
-const userInfoService = (id:any) => {
-  return instance.get("/user/getId",{params:{id}});
-};
 import useUserInfoStore from "@/stores/userInfo.js";
-const userInfoStore = useUserInfoStore();
 
+const userInfoService = (id: any) => {
+  return instance.get("/user/getId", { params: { id } });
+};
+
+const userInfoStore = useUserInfoStore();
 
 const getUserInfo = async () => {
   // 检查 userInfoStore.info 是否存在
@@ -25,25 +27,25 @@ const getUserInfo = async () => {
   }
 };
 
-
-
-getUserInfo();
+onMounted(() => {
+  getUserInfo();
+});
 </script>
+
 <template>
-    <el-text class="text1">基本资料：</el-text><br>
-    <el-text class="text2">用户名：</el-text>
-    <el-text class="username">{{
-              userInfoStore.info.userName
-            }}</el-text><br>
-    <!-- 手机号不一定有 -->
-    <!-- <el-text class="text2">手机号：</el-text>
-    <el-text class="phoneNumeber">13607126773</el-text> <br>-->
-    <el-text class="text3">积分：</el-text>
-    <el-text class="grades">{{
-              userInfoStore.info.myScore
-            }}</el-text><br>
-    <el-text class="text4">积分细则：</el-text>
-    <el-text class="gradesDetails">1200</el-text><br>
-    <el-text class="text5">计划：</el-text>
-    <el-text class="gradesDetails">计划名</el-text><br>
+  <el-text class="text1">基本资料：</el-text><br>
+  <el-text class="text2">用户名：</el-text>
+  <el-text class="username">
+    {{ userInfoStore.info?.userName || '未获取到用户名' }}
+  </el-text><br>
+  <el-text class="text3">积分：</el-text>
+  <el-text class="grades">
+    {{ userInfoStore.info?.myScore || '未获取到积分' }}
+  </el-text><br>
+  <el-text class="text4">积分细则：</el-text>
+  <el-text class="gradesDetails">1200</el-text><br>
+  <el-text class="text5">计划：</el-text>
+  <el-text class="gradesDetails">计划名</el-text><br>
 </template>
+
+

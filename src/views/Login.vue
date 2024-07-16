@@ -149,7 +149,7 @@ const clearRegisterData = () => {
           <el-input
             :prefix-icon="Lock"
             type="password"
-            placeholder="请输入再次密码"
+            placeholder="请再次输入密码"
             v-model="confirmPassword"
           ></el-input>
         </el-form-item>
