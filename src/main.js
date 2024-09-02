@@ -6,6 +6,7 @@ import 'element-plus/dist/index.css'
 import naive from 'naive-ui'
 import router from '@/router'
 import App from '@/App.vue'
+/*import App from '@/views/community/components/BrowsePost.vue'*/
 import { createPinia } from 'pinia'
 import piniaPersist from 'pinia-plugin-persist'
 

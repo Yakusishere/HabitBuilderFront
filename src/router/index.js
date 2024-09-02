@@ -9,7 +9,7 @@ import UserPostVue from '@/views/user/UserPost.vue'
 import UserResetInfoVue from '@/views/user/UserResetInfo.vue'
 import CommunityPageVue from '@/views/community/CommunityPage.vue'
 import makePlan from "@/views/plan/makePlan.vue";
-//import PostVue from '@/views/community/com/CommunityPage.vue'
+//import PostVue from '@/views/community/com/myCommunityPage.vue'
 //定义路由关系
 const routes = [
     /*{path:'/',component:LoginVue},*/

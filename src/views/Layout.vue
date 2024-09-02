@@ -10,25 +10,67 @@
         @collapse="collapsed = true"
         @expand="collapsed = false"
     >
-      <div class="aside-user-info" v-if="!collapsed">
-        <n-avatar
-            round
-            size="medium"
-            src="https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
-        />
+      <div style="display: flex; flex-direction: column; height: 100%;">
+        <!-- 顶部内容 -->
+        <div style="flex: 1;">
+          <div class="aside-user-info"
+               v-show="!collapsed"
+               :style="{ transition: 'opacity 0.3s ease' }">
+            <n-flex justify="space-around">
+              <n-avatar
+                  round
+                  size="medium"
+                  src="https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
+              />
+              <div style="display: flex; flex-direction: column; justify-content: center">
+                test
+              </div>
+            </n-flex>
+          </div>
+          <div v-show="collapsed"
+               :style="{ padding: '16px 0', display: 'flex',
+               justifyContent: 'center', transition: 'opacity 0.3s ease' }">
+            <n-avatar
+                round
+                size="small"
+                src="https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
+            />
+          </div>
+
+          <div>
+            <n-menu
+                :collapsed="collapsed"
+                :collapsed-width="64"
+                :collapsed-icon-size="22"
+                :options="menuOptions"
+                :theme-overrides="themeOverrides"
+                key-field="menuKey"
+                label-field="menuLabel"
+                children-field="menuChildren"
+                @update:value="handleMenuClick"
+            />
+          </div>
+        </div>
+
+        <!-- 底部 logout 图标 -->
+        <div v-show="collapsed"
+             :style="{ padding: '16px 0', display: 'flex',
+             justifyContent: 'center', transition: 'opacity 0.3s ease'}">
+          <n-icon size="24">
+            <logout/>
+          </n-icon>
+        </div>
+        <div v-show="!collapsed"
+             :style="{ paddingBottom: '16px', paddingLeft: '20%',
+             transition: 'opacity 0.3s ease'}">
+          <n-icon size="24">
+            <logout/>
+          </n-icon>
+        </div>
+
       </div>
-      <n-menu
-          :collapsed="collapsed"
-          :collapsed-width="64"
-          :collapsed-icon-size="22"
-          :options="menuOptions"
-          :theme-overrides="themeOverrides"
-          key-field="menuKey"
-          label-field="menuLabel"
-          children-field="menuChildren"
-          @update:value="handleMenuClick"
-      />
     </n-layout-sider>
+
     <n-layout>
       <router-view></router-view>
     </n-layout>
@@ -42,6 +84,7 @@ import {
   PersonOutline as PersonIcon,
   Calendar as PlanIcon,
   ChatbubblesOutline as communityIcon,
+  LogOutOutline as logout
 } from "@vicons/ionicons5";
 import {useRouter} from "vue-router";
 
@@ -102,6 +145,9 @@ const themeOverrides = {
 };
 
 export default defineComponent({
+  components: {
+    logout
+  },
   setup() {
     const router = useRouter();
 
@@ -110,6 +156,7 @@ export default defineComponent({
       router.push(menuKey);
     }
     return {
+      logout,
       collapsed: ref(true),
       menuOptions,
       themeOverrides,
@@ -134,6 +181,9 @@ export default defineComponent({
 }
 
 .aside-user-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   padding: 10px;
   height: 50px;
 }
