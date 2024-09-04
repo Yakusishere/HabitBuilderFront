@@ -64,7 +64,7 @@
                   共{{ postInfo.commentCount }}条评论
                 </div>
 
-                <div v-for="(comment,index) in postInfo.commentVoList" :key="index">
+                <div v-for="(comment,index) in commentSection" :key="index">
                   <div class="comment-container">
                     <n-flex justify="space-between">
                       <div>
@@ -78,22 +78,43 @@
                           </div>
 
                           <n-flex vertical>
-                            <div style="font-size: 12px;margin-top: -3px; color: #606060">
+                            <div style="font-size: 14px;margin-top: -3px; color: #606060">
                               {{ comment.nickName }}
                             </div>
-                            <div style="margin-top: -6px;max-width: 250px">
+                            <div style="font-size: 16px;margin-top: -6px;max-width: 250px">
                               {{ comment.content }}
+                            </div>
+                            <div>
+                              <n-flex>
+                                <div style="font-size: 12px; color: #7c7c7c">
+                                  {{ comment.commentDate }}
+                                </div>
+                                <div
+                                    style="cursor: pointer;font-size: 12px;color: #7c7c7c"
+                                    @click="typingReply(0,comment,index)">
+                                  回复
+                                </div>
+                              </n-flex>
                             </div>
                           </n-flex>
                         </n-flex>
                       </div>
 
                       <div>
-                        点赞
+                        <n-flex vertical>
+                          <like
+                              :initial-like="comment.isLiked"
+                              :post-id="postInfo.postId"
+                              style="height: 23px;width: 23px"
+                          />
+                          <div class="comment-likeCount-text">
+                            {{ comment.likeCount }}
+                          </div>
+                        </n-flex>
                       </div>
                     </n-flex>
                   </div>
-                  <div v-for="(reply,index) in comment.replyVoList" :key="index">
+                  <div v-for="(reply,index2) in comment.replyVoList" :key="index2">
                     <div class="reply-container">
                       <n-flex justify="space-between">
                         <div>
@@ -102,23 +123,44 @@
                               <n-avatar
                                   round
                                   size="small"
-                                  :src=reply.avatarImg
+                                  :src=reply.sendUserAvatarImg
                               />
                             </div>
 
                             <n-flex vertical>
-                              <div style="font-size: 12px; margin-top: -3px; color: #606060">
-                                {{ reply.nickName }}
+                              <div style="font-size: 13px; margin-top: -3px; color: #606060">
+                                {{ reply.sendNickName }}
                               </div>
-                              <div style="margin-top: -6px; max-width: 220px">
+                              <div style="font-size: 15px; margin-top: -6px; max-width: 220px">
                                 {{ reply.content }}
+                              </div>
+                              <div>
+                                <n-flex>
+                                  <div style="font-size: 12px; color: #7c7c7c">
+                                    回复{{ reply.receiveNickName }}于{{ reply.replyDate }}
+                                  </div>
+                                  <div
+                                      style="cursor: pointer;font-size: 12px;color: #7c7c7c"
+                                      @click="typingReply(1,reply,index)">
+                                    回复
+                                  </div>
+                                </n-flex>
                               </div>
                             </n-flex>
                           </n-flex>
                         </div>
 
                         <div>
-                          点赞
+                          <n-flex vertical>
+                            <like
+                                :initial-like="reply.isLiked"
+                                :post-id="postInfo.postId"
+                                style="height: 23px;width: 23px"
+                            />
+                            <div class="comment-likeCount-text">
+                              {{ reply.likeCount }}
+                            </div>
+                          </n-flex>
                         </div>
                       </n-flex>
                     </div>
@@ -133,54 +175,124 @@
           </div>
 
           <div class="bottom-bar-container">
-            <n-flex>
-              <div class="input-bar-container">
-                <n-input v-model:value="value" type="text" placeholder="输入评论"/>
-              </div>
+            <div v-if="!isTyping">
+              <n-flex>
+                <div class="input-bar-container">
+                  <n-input @click="typingComment" type="text" placeholder="输入评论"/>
+                </div>
 
-              <div class="like-container">
-                <n-flex>
-                  <like
-                      :is-liked="postInfo.isLiked"
-                      style="height: 23px;width: 23px"
+                <div class="like-container">
+                  <n-flex>
+                    <like
+                        :initial-like="postInfo.isLiked"
+                        :post-id="postInfo.postId"
+                        style="height: 23px;width: 23px"
+                    />
+                    <div style="margin-top: 1px;margin-left: -3px">
+                      {{ postInfo.likeCount }}
+                    </div>
+                  </n-flex>
+                </div>
+
+                <div class="fav-container">
+                  <n-flex>
+                    <fav style="height: 25px; width: 25px"/>
+                    <div style="margin-top: 1px; margin-left: -3px">
+                      {{ postInfo.favCount }}
+                    </div>
+                  </n-flex>
+                </div>
+
+                <div class="comment-button-container" @click="typingComment">
+                  <n-flex>
+                    <comment style="margin-top: 1px"/>
+
+                    <div style="margin-top: 1px; margin-left: -4px">
+                      {{ postInfo.commentCount }}
+                    </div>
+                  </n-flex>
+                </div>
+              </n-flex>
+            </div>
+
+            <div v-if="isTyping">
+              <n-flex v-if="isComment">
+                <div class="comment-input-bar">
+                  <n-input
+                      type="text"
+                      placeholder="输入评论"
+                      v-model:value="commentInput"
                   />
-                  <div style="margin-top: 1px;margin-left: -3px">
-                    {{ postInfo.likeCount }}
-                  </div>
-                </n-flex>
-              </div>
+                </div>
 
-              <div class="fav-container">
-                <n-flex>
-                  <fav style="height: 25px; width: 25px"/>
-                  <div style="margin-top: 1px; margin-left: -3px">
-                    {{ postInfo.favCount }}
-                  </div>
-                </n-flex>
-              </div>
+                <div class="send-button-container">
+                  <n-button color="#807ce8" size="small" @click="sendCommentOnClick">
+                    <div style="font-size: 13px;font-weight: normal;">
+                      发送
+                    </div>
 
-              <div class="comment-button-container">
-                <n-flex>
-                  <comment style="margin-top: 1px"/>
+                  </n-button>
+                </div>
 
-                  <div style="margin-top: 1px; margin-left: -4px">
-                    {{ postInfo.commentCount }}
-                  </div>
-                </n-flex>
-              </div>
-            </n-flex>
+                <div class="cancel-button-container">
+                  <n-button color="gray" size="small" @click="isTyping=false">
+                    <div style="font-size: 13px;font-weight: normal;">
+                      取消
+                    </div>
+                  </n-button>
+                </div>
+              </n-flex>
+
+              <n-flex v-if="isReply">
+                <div class="comment-input-bar">
+                  <n-input
+                      type="text"
+                      :placeholder="replyText"
+                      v-model:value="replyInput"
+                  />
+                </div>
+
+                <div class="send-button-container">
+                  <n-button color="#807ce8" size="small" @click="sendReplyOnClick()">
+                    <div style="font-size: 13px;font-weight: normal;">
+                      发送
+                    </div>
+
+                  </n-button>
+                </div>
+
+                <div class="cancel-button-container">
+                  <n-button color="gray" size="small" @click="isTyping=false">
+                    <div style="font-size: 13px;font-weight: normal;">
+                      取消
+                    </div>
+                  </n-button>
+                </div>
+              </n-flex>
+            </div>
+
           </div>
         </div>
       </n-flex>
+
+
     </div>
   </div>
 </template>
 
 <script>
+import {h, ref, onMounted} from "vue";
+import {ElNotification} from 'element-plus'
 import like from './like.vue';
 import Fav from "@/views/community/components/fav.vue";
 import Comment from "@/views/community/components/comment.vue";
 import Subscribe from "@/views/community/components/subscribe.vue";
+import {
+  addCommentService
+} from "@/api/comment.js";
+import {
+  addReplyService
+} from "@/api/reply.js";
 
 export default {
   name: 'BrowsePost',
@@ -196,14 +308,111 @@ export default {
       required: true
     }
   },
-  watch: {
-    isLiked(newVal) {
-      this.$refs.checkbox.checked = newVal;
+  computed: {
+    replyText() {
+      let text = this.replyToUser.valueOf();
+      console.log("text:"+text);
+      return `回复${text}`;
     }
   },
-  setup() {
+  setup(props) {
+    const commentSection = ref([]);
+    const isTyping = ref(false);
+    const isComment = ref(false);
+    const isReply = ref(false);
+    const commentInput = ref("");
 
-    return {};
+    const replyInput = ref("");
+    const replyType = ref(-1);
+    const replyToObject = ref(null);
+    const currentCommentIndex = ref(-1);
+    const replyToUser = ref("");
+
+    const typingComment = () => {
+      isTyping.value = true;
+      isComment.value = true;
+      isReply.value = false;
+    }
+
+    const typingReply = (type, data, index) => {
+      isTyping.value = true;
+      isComment.value = false;
+      isReply.value = true;
+      replyType.value = type;
+      replyToObject.value = data;
+      currentCommentIndex.value = index;
+      if (type === 0) {
+        replyToUser.value = data.nickName;
+      } else if (type === 1) {
+        replyToUser.value = data.sendNickName;
+      }
+      console.log("type:" + type);
+      console.log("data:" + data);
+      console.log("replyToUser:" + replyToUser);
+    }
+
+    const sendCommentOnClick = async () => {
+      let res = await addCommentService({
+        "postId": props.postInfo.postId,
+        "content": commentInput.value
+      });
+      if (res.code === 0) {
+        ElNotification({
+          title: ("评论成功！"),
+          message: h('i', {style: 'color: teal'}, '评论已发送，地球已接收到你的智慧信号'),
+        })
+        isTyping.value = false;
+        commentInput.value = "";
+        commentSection.value.unshift(res.data);
+      }
+    }
+
+    const sendReplyOnClick = async () => {
+      let res = null;
+      // 回复评论
+      if (replyType.value === 0) {
+        res = await addReplyService({
+          "commentId": replyToObject.value.commentId,
+          "content": replyInput.value
+        })
+      }
+      //回复别的回复
+      else if (replyType.value === 1) {
+        res = await addReplyService({
+          "commentId": replyToObject.value.commentId,
+          "replyToId": replyToObject.value.replyId,
+          "content": replyInput.value,
+        })
+      }
+
+      if (res.code === 0) {
+        ElNotification({
+          title: ("回复成功！"),
+          message: h('i', {style: 'color: teal'}, '回复已发送，地球已接收到你的智慧信号'),
+        })
+        isTyping.value = false;
+        replyInput.value = "";
+        commentSection.value[currentCommentIndex.value].replyVoList.push(res.data);
+      }
+    }
+
+    onMounted(() => {
+      commentSection.value = props.postInfo.commentVoList;
+      isTyping.value = isComment.value = isReply.value = false;
+    })
+    return {
+      commentSection,
+      isTyping,
+      isComment,
+      isReply,
+      commentInput,
+      replyInput,
+      replyToUser,
+      typingComment,
+      typingReply,
+      sendCommentOnClick,
+      sendReplyOnClick
+    };
   }
 };
 </script>
@@ -333,6 +542,12 @@ export default {
   margin-top: 15px;
 }
 
+.comment-likeCount-text {
+  text-align: center;
+  margin-top: -2px;
+  font-size: 12px;
+}
+
 .reply-container {
   margin-top: 15px;
   padding-left: 35px;
@@ -356,11 +571,27 @@ export default {
   padding-left: 15px;
 }
 
+.comment-input-bar {
+  width: 230px;
+  padding-top: 14px;
+  padding-left: 15px;
+}
+
+.send-button-container {
+  margin-top: 16px;
+  margin-left: 5px;
+}
+
+.cancel-button-container {
+  margin-top: 16px;
+}
+
 .like-container, .fav-container, .comment-button-container {
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding-top: 14px;
+  cursor: pointer;
 }
 
 .like-container {
@@ -370,4 +601,5 @@ export default {
 .fav-container, .comment-button-container {
   padding-left: 5px;
 }
+
 </style>

@@ -1,13 +1,15 @@
 <template>
   <div class="heart-container" title="Like">
-    <input type="checkbox" class="checkbox" id="Give-It-An-Id" :checked="isLiked">
+    <input type="checkbox" class="checkbox" id="Give-It-An-Id" :checked="isLiked" @change="changeLikeStatusOnClick()">
     <div class="svg-container">
       <svg viewBox="0 0 24 24" class="svg-outline" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-              fill="none" stroke="gray" stroke-width="2"></path>
+        <path
+            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+            fill="none" stroke="gray" stroke-width="2"></path>
       </svg>
       <svg viewBox="0 0 24 24" class="svg-filled" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
+        <path
+            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z">
         </path>
       </svg>
       <svg class="svg-celebrate" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
@@ -23,19 +25,56 @@
 </template>
 
 <script>
+import {ref, onMounted} from "vue";
+import {
+  likePostService,
+  deleteLikePostService
+} from "@/api/likepost.js";
+
 export default {
   name: 'like',
   props: {
-    isLiked: {
+    initialLike: {
       type: Boolean,
+      required: true
+    },
+    postId: {
+      type: Number,
       required: true
     }
   },
+  setup(props) {
+    const isLiked = ref(false);
+
+    const changeLikeStatusOnClick = async () => {
+      if (isLiked.value === true) {
+        let res = await deleteLikePostService(props.postId);
+        if (res.code === 0) {
+          isLiked.value = false;
+        }
+      } else {
+        console.log("postId:" + props.postId);
+        let res = await likePostService(props.postId);
+        if (res.code === 0) {
+          isLiked.value = true;
+        }
+      }
+    }
+
+    onMounted(() => {
+      console.log("initialLike:" + props.initialLike);
+      isLiked.value = props.initialLike;
+    })
+
+    return {
+      changeLikeStatusOnClick,
+      isLiked
+    }
+  }
 };
 </script>
 
 <style scoped>
-/* From Uiverse.io by catraco */
 .heart-container {
   --heart-color: rgb(255, 50, 73);
   position: relative;
@@ -83,15 +122,15 @@ export default {
   stroke-width: 2px;
 }
 
-.heart-container .checkbox:checked~.svg-container .svg-filled {
+.heart-container .checkbox:checked ~ .svg-container .svg-filled {
   display: block
 }
 
-.heart-container .checkbox:checked~.svg-container .svg-celebrate {
+.heart-container .checkbox:checked ~ .svg-container .svg-celebrate {
   display: block
 }
 
-.heart-container .checkbox:checked~.svg-container .svg-outline {
+.heart-container .checkbox:checked ~ .svg-container .svg-outline {
   display: none; /* 点击后隐藏灰色轮廓 */
 }
 

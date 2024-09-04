@@ -63,7 +63,9 @@
       <div>
         <transition name="modal-fade">
           <div v-if="showModal" @click="showModal = false">
-            <BrowsePost :postInfo="postInfo"/>
+            <BrowsePost
+                :postInfo="postInfo"
+            />
           </div>
         </transition>
       </div>

@@ -1,6 +1,6 @@
 <template>
   <div class="star-container" title="Fav">
-    <input type="checkbox" class="checkbox" id="Give-It-An-Id">
+    <input type="checkbox" class="checkbox" id="fav">
     <div class="svg-container">
       <svg viewBox="0 0 24 24" class="svg-outline" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 3.5l2.66 5.39 5.94.86-4.3 4.2 1.02 5.94-5.32-2.8-5.32 2.8 1.02-5.94-4.3-4.2 5.94-.86L12 3.5z"
