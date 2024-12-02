@@ -681,7 +681,7 @@ onMounted(async () => {
 }
 
 .timePickerContainer {
-  top: 50;
+  /*top: 50px;*/
 }
 
 .time-picker {

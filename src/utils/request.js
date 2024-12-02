@@ -5,7 +5,7 @@ const instance = axios.create({
   baseURL: '/api', // 确保 baseURL 以 /api 开头
   headers: {
     'Content-Type': 'application/json;charset=utf-8',
-    'Authorization':'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI1IiwiZXhwIjoxNzI1NTAzMzA4LCJzdWIiOiJhZG1pbiIsImlhdCI6MTcyNTQxNjkwOH0.ANvgRc544e1h1C75Yc_EksnCGv0FrUbi6jtMgexx740'
+    'Authorization':'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiI1IiwiZXhwIjoxNzI1OTI5ODU2LCJzdWIiOiJhZG1pbiIsImlhdCI6MTcyNTg0MzQ1Nn0.WO6r4vCxespvmQX0ZxKJ5bKSDcLP1HKwCokH4--0uMU'
   },
   validateStatus(status) {
     return status === 200;
