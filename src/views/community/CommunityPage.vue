@@ -2,9 +2,21 @@
   <n-layout>
     <n-layout-header class="header">
       <div class="search-bar-container">
-        <div class="search-bar">
-          <n-input v-model:value="searchPostInput" type="text" placeholder="搜索帖子" class="input-bar"/>
-        </div>
+        <n-flex justify="space-between">
+          <div></div>
+          <div class="search-bar">
+            <n-input v-model:value="searchPostInput" type="text" placeholder="搜索帖子" class="input-bar"/>
+          </div>
+          <n-button text ghost color="#f8f8ff" @click="showAddPost = true">
+            <template #icon>
+              <n-icon>
+                <add-post-icon/>
+              </n-icon>
+            </template>
+            发布帖子
+          </n-button>
+        </n-flex>
+
       </div>
     </n-layout-header>
 
@@ -69,6 +81,14 @@
           </div>
         </transition>
       </div>
+
+      <div>
+        <transition name="modal-fade">
+          <div v-if="showAddPost" @click="showAddPost= false">
+            <add-post/>
+          </div>
+        </transition>
+      </div>
     </n-layout-content>
   </n-layout>
 </template>
@@ -78,17 +98,23 @@ import {computed, defineComponent, onMounted, ref} from "vue";
 import PostCardVue from "@/views/community/components/PostCard.vue"
 import PostCard from "@/views/community/CardPost.vue";
 import BrowsePost from "@/views/community/components/BrowsePost.vue";
+import AddPost from "@/views/community/components/AddPost.vue"
 import {
   postListService,
   browsePostService
 } from "@/api/post.js";
 import 'animate.css';
+import {NIcon} from "naive-ui";
+import {
+  AddCircleOutline as addPostIcon
+} from "@vicons/ionicons5";
 
 const Column1 = ref([]);
 const Column2 = ref([]);
 const Column3 = ref([]);
 const Column4 = ref([]);
 const showModal = ref(false);
+const showAddPost = ref(false);
 const postInfo = ref(null);
 
 export default defineComponent({
@@ -96,6 +122,8 @@ export default defineComponent({
     BrowsePost,
     PostCard,
     PostCardVue,
+    addPostIcon,
+    AddPost
   },
   setup() {
     const getPostList = async () => {
@@ -137,10 +165,12 @@ export default defineComponent({
       browsePostOnClick,
       postInfo,
       showModal,
+      showAddPost,
       Column1,
       Column2,
       Column3,
       Column4,
+      addPostIcon
     };
   }
 });
@@ -158,6 +188,8 @@ export default defineComponent({
   display: flex;
   flex-direction: column;
   justify-content: center;
+  padding-left: 60px;
+  padding-right: 60px;
 }
 
 .search-bar {

@@ -12,10 +12,14 @@ import makePlan from "@/views/plan/makePlan.vue";
 //import PostVue from '@/views/community/com/myCommunityPage.vue'
 //定义路由关系
 const routes = [
-    /*{path:'/',component:LoginVue},*/
-    {path: '/', redirect: '/plan/planpage'},
+    {path: '/', redirect: '/login'},  // 修改默认路由，重定向到 /login
     {
-        path: '/', component: LayoutVue,
+        path: '/login',
+        component: LoginVue,  // 登录页面
+    },
+    {
+        path: '/',
+        component: LayoutVue,  // 主布局组件
         children: [
             {path: '/plan/makePlan', component: makePlan},
             {path: '/plan/planPage', component: PlanPageVue},
@@ -26,7 +30,7 @@ const routes = [
             {path: '/community/communityPage', component: CommunityPageVue},
         ]
     },
-]
+];
 //创建路由器
 const router = createRouter({
     history: createWebHistory(),

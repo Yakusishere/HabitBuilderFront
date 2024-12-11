@@ -1,6 +1,6 @@
 <script setup>
-import { User, Lock } from "@element-plus/icons-vue";
-import { onMounted, ref } from "vue";
+import {User, Lock} from "@element-plus/icons-vue";
+import {onMounted, ref} from "vue";
 import instance from "@/utils/request.js";
 //控制注册与登录表单的显示， 默认显示注册
 const isRegister = ref(false);
@@ -26,12 +26,12 @@ const checkconfirmPassword = (rule, value, callback) => {
 //定义表单校验规则
 const rules = {
   userName: [
-    { required: true, message: "请输入用户名", trigger: "blur" },
-    { max: 16, message: "用户名最大只可输入16个字符", trigger: "blur" },
+    {required: true, message: "请输入用户名", trigger: "blur"},
+    {max: 16, message: "用户名最大只可输入16个字符", trigger: "blur"},
   ],
   password: [
-    { required: true, message: "请输入密码", trigger: "blur" },
-    { min: 5, max: 16, message: "密码为5~16个字符", trigger: "blur" },
+    {required: true, message: "请输入密码", trigger: "blur"},
+    {min: 5, max: 16, message: "密码为5~16个字符", trigger: "blur"},
   ],
   //confirmPassword: [{ validator: checkconfirmPassword, trigger: "blur" }],
 };
@@ -55,64 +55,61 @@ const register = async () => {
     }
   } catch (error) {
     console.error(
-      "Register Error: ",
-      error.response ? error.response.data : error.message
+        "Register Error: ",
+        error.response ? error.response.data : error.message
     );
     alert(
-      "Error: " + (error.response ? error.response.data.message : error.message)
+        "Error: " + (error.response ? error.response.data.message : error.message)
     );
   }
 };
 
 //提供调用登录接口的函数
 const userLoginService = (loginData) => {
-  /* const params =new URLSearchParams();
-    for(let key in loginData){
-        params.append(key,loginData[key])
-    } */
   return instance.post("/user/login", loginData);
 };
 //登录函数
 //import { useTokenStore } from "@/stores/token.js";
-import { useRouter } from "vue-router";
+import {useRouter} from "vue-router";
 import useUserInfoStore from "@/stores/userInfo";
+
 const userInfoStore = useUserInfoStore();
 const router = useRouter();
 //const tokenStore = useTokenStore();
 const login = async () => {
   try {
     let result = await userLoginService(registerData.value);
-    if (result.data.isLogin === true) {
-      if (result.code === 0) {
-        //tokenStore.setToken(result.data.userId);
-        alert("success");
-        console.log("loginUserId:" + result.data.userId);
-        userInfoStore.info.userId = result.data.userId;
-        router.push("/main/plan/planpage");
-        //////////////////////userId = result.data.userId;
-      } else {
-        alert("登录失败，未返回有效数据");
-      }
+    if (result.code === 0) {
+      // 存储 token 到 localStorage
+      localStorage.setItem('token', result.data.token);  // 将 token 存储到 localStorage
+
+      alert("success");
+      console.log("loginInfo:" + result.data);
+      // userInfoStore.info.userId = result.data.userId;
+
+      // 登录成功后跳转到指定页面
+      router.push("/plan/planpage");
     } else {
-      alert("账号已被封");
+      alert("登录失败，未返回有效数据");
     }
   } catch (error) {
     console.error(
-      "Login Error: ",
-      error.response ? error.response.data : error.message
+        "Login Error: ",
+        error.response ? error.response.data : error.message
     );
     alert(
-      "Error: " + (error.response ? error.response.data.message : error.message)
+        "Error: " + (error.response ? error.response.data.message : error.message)
     );
   }
 };
+
 //定义函数，用来清空数据模型的数据
 const clearRegisterData = () => {
   (confirmPassword.value = ""),
-    (registerData.value = {
-      userName: "",
-      password: "",
-    });
+      (registerData.value = {
+        userName: "",
+        password: "",
+      });
 };
 
 //保存账号密码
@@ -120,23 +117,23 @@ const setCookie = (userName, password, days) => {
   var curDate = new Date();
   curDate.setDate(curDate.getDate() + 24 * 60 * 60 * 1000 * days);
   window.document.cookie =
-    "userName" +
-    "=" +
-    userName +
-    ";path=/;expires=" +
-    curDate.toLocaleTimeString();
+      "userName" +
+      "=" +
+      userName +
+      ";path=/;expires=" +
+      curDate.toLocaleTimeString();
   window.document.cookie =
-    "password" +
-    "=" +
-    password +
-    ";path=/;expires=" +
-    curDate.toLocaleTimeString();
+      "password" +
+      "=" +
+      password +
+      ";path=/;expires=" +
+      curDate.toLocaleTimeString();
   window.document.cookie =
-    "ifRemember" +
-    "=" +
-    ifRemember +
-    ";path=/;expires=" +
-    curDate.toLocaleTimeString();
+      "ifRemember" +
+      "=" +
+      ifRemember +
+      ";path=/;expires=" +
+      curDate.toLocaleTimeString();
 };
 
 const clearCookie = () => {
@@ -175,61 +172,61 @@ const submitForm = () => {
 <template>
   <el-row class="login-page">
     <video autoplay muted loop class="bg-video">
-      <source src="@/assets/bg_video.mp4" type="video/mp4" />
+      <source src="@/assets/bg_video.mp4" type="video/mp4"/>
     </video>
     <el-col :span="12" class="bg"></el-col>
     <el-col :span="6" :offset="3" class="form">
       <!-- 注册表单 -->
       <el-form
-        ref="form"
-        size="large"
-        autocomplete="off"
-        v-if="isRegister"
-        :model="registerData"
-        :rules="rules"
+          ref="form"
+          size="large"
+          autocomplete="off"
+          v-if="isRegister"
+          :model="registerData"
+          :rules="rules"
       >
         <el-form-item>
           <h1>注册</h1>
         </el-form-item>
         <el-form-item prop="userName">
           <el-input
-            :prefix-icon="User"
-            placeholder="请输入用户名"
-            v-model="registerData.userName"
+              :prefix-icon="User"
+              placeholder="请输入用户名"
+              v-model="registerData.userName"
           />
         </el-form-item>
         <el-form-item prop="password">
           <el-input
-            :prefix-icon="Lock"
-            type="password"
-            placeholder="请输入密码"
-            v-model="registerData.password"
+              :prefix-icon="Lock"
+              type="password"
+              placeholder="请输入密码"
+              v-model="registerData.password"
           ></el-input>
         </el-form-item>
         <el-form-item prop="confirmPassword">
           <el-input
-            :prefix-icon="Lock"
-            type="password"
-            placeholder="请再次输入密码"
-            v-model="confirmPassword"
+              :prefix-icon="Lock"
+              type="password"
+              placeholder="请再次输入密码"
+              v-model="confirmPassword"
           ></el-input>
         </el-form-item>
         <!-- 注册按钮 -->
         <el-form-item>
           <el-button
-            class="button"
-            type="primary"
-            auto-insert-space
-            @click="register"
+              class="button"
+              type="primary"
+              auto-insert-space
+              @click="register"
           >
             注册
           </el-button>
         </el-form-item>
         <el-form-item class="flex">
           <el-link
-            type="default"
-            :underline="false"
-            @click="
+              type="default"
+              :underline="false"
+              @click="
               isRegister = false;
               clearRegisterData();
             "
@@ -240,30 +237,30 @@ const submitForm = () => {
       </el-form>
       <!-- 登录表单 -->
       <el-form
-        ref="form"
-        size="large"
-        autocomplete="off"
-        v-else
-        :model="registerData"
-        :rules="rules"
+          ref="form"
+          size="large"
+          autocomplete="off"
+          v-else
+          :model="registerData"
+          :rules="rules"
       >
         <el-form-item>
           <h1>登录</h1>
         </el-form-item>
         <el-form-item prop="userName">
           <el-input
-            :prefix-icon="User"
-            placeholder="请输入用户名"
-            v-model="registerData.userName"
+              :prefix-icon="User"
+              placeholder="请输入用户名"
+              v-model="registerData.userName"
           ></el-input>
         </el-form-item>
         <el-form-item prop="password">
           <el-input
-            name="password"
-            :prefix-icon="Lock"
-            type="password"
-            placeholder="请输入密码"
-            v-model="registerData.password"
+              name="password"
+              :prefix-icon="Lock"
+              type="password"
+              placeholder="请输入密码"
+              v-model="registerData.password"
           ></el-input>
         </el-form-item>
         <el-form-item class="flex">
@@ -274,18 +271,19 @@ const submitForm = () => {
         <!-- 登录按钮 -->
         <el-form-item>
           <el-button
-            class="button"
-            type="primary"
-            auto-insert-space
-            @click="submitForm"
-            >登录</el-button
+              class="button"
+              type="primary"
+              auto-insert-space
+              @click="submitForm"
+          >登录
+          </el-button
           >
         </el-form-item>
         <el-form-item class="flex">
           <el-link
-            type="default"
-            :underline="false"
-            @click="
+              type="default"
+              :underline="false"
+              @click="
               isRegister = true;
               clearRegisterData();
             "

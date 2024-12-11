@@ -2,6 +2,15 @@
 import { onMounted, ref, onUpdated, nextTick } from "vue";
 import instance from "@/utils/request.js";
 import useUserInfoStore from "@/stores/userInfo";
+import {
+  autoAddPlanService
+} from "@/api/plan.js";
+import {
+  eventListService
+} from "@/api/event.js";
+import {
+  addConversation
+} from "@/api/conversation.js";
 
 const userInfoStore = new useUserInfoStore();
 const dialogVisible = ref(false);
@@ -26,10 +35,6 @@ const openForm = () => {
   dialogVisible.value = true;
 };
 
-const autoAddPlan = (data) => {
-  return instance.post("/plan/autoAddPlan", data);
-};
-
 const addHistoryConversation = (HCData) => {
   return instance.post("/historyConversation/addHistoryConversation", HCData);
 };
@@ -44,8 +49,7 @@ const AICreatePlanOnClick = async () => {
   }
 
   AICreatePlanLoading.value = true; //创建计划时进行加载
-  let addPlanRes = await autoAddPlan({
-    userId: form.value.userId,
+  let addPlanRes = await autoAddPlanService({
     title: form.value.planName,
     description: form.value.planDescription,
   });
@@ -72,13 +76,6 @@ const AISendMessage = (formData) => {
   });
 };
 
-const addConversation = (data) => {
-  return instance.post("/conversation/addConversation", data);
-};
-
-const getPlanEvents = (planId) => {
-  return instance.get("/event/getPlanEvents", { params: { planId } });
-};
 
 const getMessageList = (historyConversationId) => {
   return instance.get("/conversation/getConversationByHistoryConversationId", {
@@ -243,7 +240,6 @@ const enterChangePlan = async () => {
 
   console.log("获取当前计划的事件成功");
   let changePlanMsgRes = await addConversation({
-    userId: userInfoStore.info.userId,
     historyConversationId: selectedHCId.value,
     question: "请你帮我修改一下当前的计划",
     answer: "当然可以!请告诉我你的修改要求",
@@ -255,7 +251,11 @@ const enterChangePlan = async () => {
 };
 
 const checkPlan = async () => {
-  let getEventsRes = await getPlanEvents(selectedPlanId.value);
+  let getEventsRes = await eventListService(
+      {
+        "planId":selectedPlanId.value
+      }
+  );
   if (getEventsRes.code === 0) {
     console.log("获取当前计划的事件成功");
     const answerStart = "当然可以！你目前的计划如下：\n\n";
@@ -266,7 +266,6 @@ const checkPlan = async () => {
     console.log(answer);
 
     let addConversationRes = await addConversation({
-      userId: userInfoStore.info.userId,
       historyConversationId: selectedHCId.value,
       question: "我想查看当前的详细计划",
       answer: answer,
@@ -300,7 +299,6 @@ const sendChangePlanMsg = async () => {
     const answer = answerStart + answerPlan + answerEnd;
     console.log("修改后计划:", answer);
     let addConversationRes = await addConversation({
-      userId: userInfoStore.info.userId,
       historyConversationId: selectedHCId.value,
       question: question,
       answer: answer,
@@ -328,7 +326,6 @@ const confirmChangePlan = async () => {
     let question = "确认修改";
     let answer = "修改成功!";
     let addConversationRes = await addConversation({
-      userId: userInfoStore.info.userId,
       historyConversationId: selectedHCId.value,
       question: question,
       answer: answer,
@@ -343,7 +340,6 @@ const confirmChangePlan = async () => {
 const leaveChangePlan = async () => {
   ifChangePlan.value = false;
   let res = await addConversation({
-    userId: userInfoStore.info.userId,
     historyConversationId: selectedHCId.value,
     question: "放弃修改",
     answer: "好的。如果有其他需求，请跟我说",

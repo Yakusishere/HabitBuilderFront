@@ -1,7 +1,9 @@
-//导入request.js请求工具
+import instance from "@/utils/request.js"
 
-//提供调用注册接口的函数
+export function registerService(user){
+    return instance.post('/user/register',user);
+}
 
-
-
-//修改用户信息
+export function loginService(user){
+    return instance.post('/user/login',user);
+}

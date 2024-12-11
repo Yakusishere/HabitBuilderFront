@@ -1,3 +1,4 @@
+<!--
 <script>
 import { ref, onMounted, watch } from "vue";
 import instance from "@/utils/request";
@@ -289,7 +290,7 @@ export default {
                 v-on:isTypingReply="getIsTypingReply"
               />
             </div>
-            <!-- 底部固定的点赞、收藏和评论框 -->
+            &lt;!&ndash; 底部固定的点赞、收藏和评论框 &ndash;&gt;
             <div v-if="!isReplying">
               <PostBottomBar :postId="selectedPost.id" />
             </div>
@@ -561,4 +562,4 @@ html {
   z-index: 0;
   margin-top: 40px;
 }
-</style>
+</style>-->

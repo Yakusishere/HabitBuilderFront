@@ -425,7 +425,7 @@ import {
   searchByTag,
   searchPlan,
   updatePlan,
-} from "@/stores/plan.js";
+} from "@/api/plan.js";
 import useUserInfoStore from "@/stores/userInfo.js";
 import index from "pinia-plugin-persist";
 import {

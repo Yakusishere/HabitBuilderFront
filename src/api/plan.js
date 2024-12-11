@@ -1,5 +1,21 @@
 import instance from "@/utils/request.js"
 
+export function dailyPlanOptionsService(date){
+    return instance.get('/plan/dailyPlanOptions',{params:{date}});
+}
+
+export function dailyEventService(date){
+    return instance.get('/plan/dailyEvent',{params:{date}});
+}
+
+export function completeEventService(eventId){
+    return instance.get('/plan/completeEvent',{params:{eventId}});
+}
+
+export function autoAddPlanService(plan){
+    return instance.post("/plan/autoAddPlan", plan);
+};
+
 export function getPlanList()  {
     return instance({
         url:'/manager/getPlanList',
@@ -154,17 +170,6 @@ export function delEvent(eventId){
     })
 }
 
-export function setColor(userId,localDate){
-    return instance({
-        url:'/event/setColor',
-        method:'post',
-        params:{
-            userId:userId,
-            localDate:localDate
-        }
-    }).then(res=>{
-        return res;
-    }).catch(err=>{
-        console.log(err);
-    })
+export function setColor(date){
+    return instance.get('/event/setColor',{params:{date}});
 }
