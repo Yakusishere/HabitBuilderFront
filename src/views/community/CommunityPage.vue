@@ -32,6 +32,8 @@
                     :avatarImg="post.avatarImg"
                     :title="post.title"
                     :nickName="post.nickName"
+                    :like-count="post.likeCount"
+                    :fav-count="post.favCount"
                 />
               </div>
             </n-col>
@@ -43,6 +45,8 @@
                     :avatarImg="post.avatarImg"
                     :title="post.title"
                     :nickName="post.nickName"
+                    :like-count="post.likeCount"
+                    :fav-count="post.favCount"
                 />
               </div>
             </n-col>
@@ -54,6 +58,8 @@
                     :avatarImg="post.avatarImg"
                     :title="post.title"
                     :nickName="post.nickName"
+                    :like-count="post.likeCount"
+                    :fav-count="post.favCount"
                 />
               </div>
             </n-col>
@@ -65,6 +71,8 @@
                     :avatarImg="post.avatarImg"
                     :title="post.title"
                     :nickName="post.nickName"
+                    :like-count="post.likeCount"
+                    :fav-count="post.favCount"
                 />
               </div>
             </n-col>
@@ -84,8 +92,8 @@
 
       <div>
         <transition name="modal-fade">
-          <div v-if="showAddPost" @click="showAddPost= false">
-            <add-post/>
+          <div v-if="showAddPost" @click="showAddPost=false">
+            <add-post @closeModal="showAddPost = false" />
           </div>
         </transition>
       </div>
@@ -94,7 +102,7 @@
 </template>
 
 <script>
-import {computed, defineComponent, onMounted, ref} from "vue";
+import {computed, defineComponent, onMounted, ref, watch} from "vue";
 import PostCardVue from "@/views/community/components/PostCard.vue"
 import PostCard from "@/views/community/CardPost.vue";
 import BrowsePost from "@/views/community/components/BrowsePost.vue";
@@ -116,6 +124,7 @@ const Column4 = ref([]);
 const showModal = ref(false);
 const showAddPost = ref(false);
 const postInfo = ref(null);
+const searchPostInput = ref("");
 
 export default defineComponent({
   components: {
@@ -128,7 +137,18 @@ export default defineComponent({
   setup() {
     const getPostList = async () => {
       let res = await postListService({}, '', '');
-      res.data.forEach((post, index) => {
+      clearColumn();
+      addToColumn(res.data);
+    }
+
+    const searchPost = async ()=>{
+      let res = await postListService({"title":searchPostInput.value},'','');
+      clearColumn();
+      addToColumn(res.data);
+    }
+
+    const addToColumn = (data) =>{
+      data.forEach((post, index) => {
         if (index % 4 === 0) {
           Column1.value.push(post);
         } else if (index % 4 === 1) {
@@ -155,13 +175,20 @@ export default defineComponent({
       showModal.value = true;
     }
 
+    watch(searchPostInput, (newValue, oldValue) => {
+      // 如果输入框的值发生变化，则调用搜索方法
+      if (newValue.trim() !== oldValue.trim()) {
+        searchPost(); // 调用搜索方法
+      }
+    });
+
     onMounted(() => {
       clearColumn();
       getPostList();
     });
 
     return {
-      searchPostInput: ref(null),
+      searchPostInput,
       browsePostOnClick,
       postInfo,
       showModal,
@@ -170,7 +197,7 @@ export default defineComponent({
       Column2,
       Column3,
       Column4,
-      addPostIcon
+      addPostIcon,
     };
   }
 });

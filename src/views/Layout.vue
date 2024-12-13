@@ -20,10 +20,10 @@
               <n-avatar
                   round
                   size="medium"
-                  src="https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
+                  :src=avatarImg
               />
               <div style="display: flex; flex-direction: column; justify-content: center">
-                test
+                {{ nickName }}
               </div>
             </n-flex>
           </div>
@@ -33,7 +33,7 @@
             <n-avatar
                 round
                 size="small"
-                src="https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
+                :src=avatarImg
             />
           </div>
 
@@ -78,7 +78,7 @@
 </template>
 
 <script>
-import {defineComponent, h, ref} from "vue";
+import {defineComponent, h, onMounted, ref} from "vue";
 import {NIcon} from "naive-ui";
 import {
   PersonOutline as PersonIcon,
@@ -86,6 +86,7 @@ import {
   ChatbubblesOutline as communityIcon,
   LogOutOutline as logout
 } from "@vicons/ionicons5";
+import {getUserInfoService} from "@/api/user.js";
 import {useRouter} from "vue-router";
 
 function renderIcon(icon) {
@@ -119,23 +120,9 @@ const menuOptions = [
   },
   {
     menuLabel: "我的",
-    menuKey: "/user",
+    menuKey: "/user/userInfo",
     icon: renderIcon(PersonIcon),
-    menuChildren: [
-      {
-        menuLabel: "用户信息",
-        menuKey: "/user/userinfo"
-      },
-      {
-        menuLabel: "用户帖子",
-        menuKey: "/user/userPost"
-      },
-      {
-        menuLabel: "修改信息",
-        menuKey: "/user/userResetInfo"
-      }
-    ]
-  },
+  }
 ];
 
 const themeOverrides = {
@@ -151,15 +138,33 @@ export default defineComponent({
   setup() {
     const router = useRouter();
 
+    const nickName = ref("");
+    const avatarImg = ref("");
+
     const handleMenuClick = (menuKey) => {
       console.log(menuKey);
       router.push(menuKey);
     }
+
+    const getSideBarInfo = async () =>{
+      let res = await getUserInfoService();
+      if(res.code === 0){
+        avatarImg.value = res.data.avatarImg;
+        nickName.value = res.data.nickName
+      }
+    }
+
+    onMounted(()=>{
+      getSideBarInfo();
+    })
+
     return {
       logout,
       collapsed: ref(true),
       menuOptions,
       themeOverrides,
+      avatarImg,
+      nickName,
       handleMenuClick,
     };
   }

@@ -14,7 +14,11 @@ export function completeEventService(eventId){
 
 export function autoAddPlanService(plan){
     return instance.post("/plan/autoAddPlan", plan);
-};
+}
+
+export function myPlanService(){
+    return instance.get('/plan/myPlan');
+}
 
 export function getPlanList()  {
     return instance({

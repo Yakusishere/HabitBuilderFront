@@ -1,624 +1,490 @@
-<script >
-import { ref, onMounted, watch } from "vue";
-import instance from "@/utils/request";
-import useUserInfoStore from "@/stores/userInfo.js";
-import EditPost from '@/views/user/EditPost.vue';
-import { ElMessage } from "element-plus";
+<script>
+import {CreateOutline as editIcon} from "@vicons/ionicons5";
+import PlanCard from "@/views/user/Components/PlanCard.vue";
+import {myPlanService} from "@/api/plan.js";
+import {getUserDetailService} from "@/api/user.js";
+import {
+  myPostListService,
+  likePostListService,
+  favPostListService, browsePostService
+} from "@/api/post.js";
+import {defineComponent, onMounted, ref} from "vue";
+import EditModal from "@/views/user/Components/EditModal.vue";
+import BrowsePost from "@/views/community/components/BrowsePost.vue";
+import PostCardVue from "@/views/community/components/PostCard.vue";
 
-//import type { TabsPaneContext } from 'element-plus'
-
-import PostCard from '@/views/community/CardPost.vue';
-import PostBottomBar from "@/views/community/PostBottomBar.vue";
-import PostComments from "@/views/community/PostComments.vue";
-
-export default {
-  name: "userPost",
-  components: {
-    PostComments,
-    PostBottomBar,
-    PostCard,
-    EditPost,
+export default defineComponent({
+  name: "test",
+  props: {
+    post: {
+      type: Object,
+      required: true,
+    },
   },
-  setup() {
-    const search = ref("");
-    const selectedPost = ref(null);
-    const posts = ref([]);
-    const userInfoStore = useUserInfoStore();
-    const isReplying = ref(false);
-    const ifShowPost = ref(false);
-    const receiveReplyUser = ref();
-    const replyCommentCount = ref();
-    const newReply = ref();
-    const receiveUserName = ref("未知用户");
-    const isEditable = ref();
-    const tabName=ref("first")
-    //const activeName = 'first';
+  components: {
+    PostCardVue,
+    BrowsePost,
+    EditModal,
+    editIcon,
+    PlanCard
+  },
+  setup(props) {
+    const myPlanList = ref([]);
 
-    watch(selectedPost, (newValue) => {
-      console.log("selectedPost has changed to:", newValue.id);
-    });
+    const nickName = ref();
+    const avatarImg = ref();
+    const myScore = ref();
+    const fanCount = ref();
+    const followCount = ref();
+    const showEditModal = ref(false);
 
-    //调对用户获取所有帖子的接口
-    const getUserPostService = (userId) => {
-      return instance.get("post/getPostByUserId", { params: { userId } });
-    };
-    //根据用户获取喜欢帖子的接口
-     const getUserLikePostService = (userId) => {
-      return instance.get("likepost/getLikePostByUserId", { params: { userId } });
-    };
-    //根据用户获取收藏帖子的接口
-     const getUserCollectPostService = (userId) => {
-      return instance.get("collectpost/getCollections", { params: { userId } });
-    };
-    //调用获取帖子评论接口
-    const getPostComments = (postId) => {
-      return instance.get("/comment/getThisPostComments", {
-        params: { postId },
-      });
-    };
-    
-    const replyComment = (data) => {
-      return instance.post("/comment/replyComment", data);
-    };
-    const searchPost = (title) => {
-      return instance.get("/post/searchPost", { params: { title } });
-    };
-    //根据id查找用户名接口
-    const getUserById = (id) => {
-      return instance.get("/user/getId", { params: { id } });
-    };
+    const Column1 = ref([]);
+    const Column2 = ref([]);
+    const Column3 = ref([]);
 
-    const getPostList = async () => {
-      console.log("获取个人帖子");
-      let res = await getUserPostService(userInfoStore.info.userId);
-      console.log("method used");
+    const Column4 = ref([]);
+    const Column5 = ref([]);
+    const Column6 = ref([]);
+
+    const Column7 = ref([]);
+    const Column8 = ref([]);
+    const Column9 = ref([]);
+
+    const postInfo = ref();
+    const showModal = ref(false);
+
+    const getUserDetail = async () => {
+      let res = await getUserDetailService();
       if (res.code === 0) {
-        console.log("gotPosts:" + res.data);
-        console.log("success got posts");
-        posts.value = res.data.map((post) => ({
-          id: post.postId,
-          image: post.image.split(','), // 你可以根据需要调整图片的处理方式
-          title: post.title,
-          description: post.content,
-          author: post.userName, // 你可以根据需要调整作者的处理方式
-          date: new Date(post.publishDate).toLocaleDateString("zh-CN", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          }),
-        }));
-      } else {
-        console.log("failed to get posts");
+        nickName.value = res.data.nickName;
+        avatarImg.value = res.data.avatarImg;
+        myScore.value = res.data.myScore;
+        fanCount.value = res.data.fanCount;
+        followCount.value = res.data.followCount;
       }
-    };
+    }
+
+    const getUserPlanList = async () => {
+      let res = await myPlanService();
+      if (res.code === 0) {
+        myPlanList.value = res.data;
+      }
+    }
+
+    const openEditModal = () => {
+      showEditModal.value = true;
+    }
+
+    const getMyPostList = async () => {
+      let res = await myPostListService();
+      if (res.code === 0) {
+        clearColumn();
+        addToColumn(res.data);
+      }
+    }
+
+    const getFavPostList = async () => {
+      let res = await favPostListService();
+      if (res.code === 0) {
+        let data = res.data;
+        data.forEach((post, index) => {
+          if (index % 3 === 0) {
+            Column4.value.push(post);
+          } else if (index % 3 === 1) {
+            Column5.value.push(post);
+          } else {
+            Column6.value.push(post);
+          }
+        });
+      }
+    }
 
     const getLikePostList = async () => {
-      console.log("获取个人点赞过帖子");
-      let res = await getUserLikePostService(userInfoStore.info.userId);
-      console.log("method used");
+      let res = await likePostListService();
       if (res.code === 0) {
-        console.log("gotPosts:" + res.data);
-        console.log("success got posts");
-        posts.value = res.data.map((post) => ({
-          id: post.postId,
-          image: post.image && typeof post.image === 'string' ? post.image.split(',') : [],// 你可以根据需要调整图片的处理方式
-          title: post.title,
-          description: post.content,
-          author: post.userName, // 你可以根据需要调整作者的处理方式
-          date: new Date(post.publishDate).toLocaleDateString("zh-CN", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          }),
-        }));
-      } else {
-        console.log("failed to get posts");
-      }
-    };
-
-
-    const getCollectPostList = async () => {
-      console.log("获取个人收藏过帖子");
-      let res = await getUserCollectPostService(userInfoStore.info.userId);
-      console.log("method used");
-      if (res.code === 0) {
-        console.log("gotPosts:" + res.data);
-        console.log("success got posts");
-        posts.value = res.data.map((post) => ({
-          id: post.postId,
-          image: post.image && typeof post.image === 'string' ? post.image.split(',') : [], // 你可以根据需要调整图片的处理方式
-          title: post.title,
-          description: post.content,
-          author: post.userName, // 你可以根据需要调整作者的处理方式
-          date: new Date(post.publishDate).toLocaleDateString("zh-CN", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          }),
-        }));
-      } else {
-        console.log("failed to get posts");
-      }
-    };
-
-    //选择帖子
-    const selectPost = async (postValue) => {
-      ifShowPost.value = true;
-      newReply.value = "";
-      console.log("showPost:" + ifShowPost.value);
-      selectedPost.value = postValue;
-      console.log("selectedPostId:" + selectedPost.value.id);
-    };
-
-    const addReply = async () => {
-      let res = await replyComment({
-        commentCount: replyCommentCount.value,
-        postId: selectedPost.value.id,
-        content: newReply.value,
-        sendUserId: userInfoStore.info.userId,
-        receiveUserId: receiveReplyUser.value,
-      });
-      if (res.code === 0) {
-        ElMessage({
-          message: "评论成功！",
-          type: "success",
-        });
-        newReply.value = "";
-        isReplying.value = false;
-      }
-    };
-
-    const getIsTypingReply = (data) => {
-      console.log("data:" + data.isTyping);
-      isReplying.value = data.isTyping;
-      receiveReplyUser.value = data.userId;
-      replyCommentCount.value = data.commentCount;
-      receiveUserName.value = data.receiveUserName;
-      console.log("传入的receiveUserName:" + receiveUserName.value);
-    };
-    const deletePost = async (postId) => {
-      ifShowPost.value = false;
-      console.log("发起删除请求:", postId);
-      try {
-        const formData = new FormData();
-        formData.append('postId', postId);
-
-        const response = await instance.delete('/post/deletePost', {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          },
-          data: formData
-        });
-
-        console.log("服务器响应:", response);
-        window.location.reload();
-        
-        if (response && response.data) {
-          console.log("服务器响应数据:", response.data);
-          if (response.data.code === 0) {
-            posts.value = posts.value.filter(post => post.id !== postId);
-            if (selectedPost.value && selectedPost.value.id === postId) {
-              selectedPost.value = null;
-            }
-            getPostList();
-            console.log("删除成功");
+        let data = res.data;
+        data.forEach((post, index) => {
+          if (index % 3 === 0) {
+            Column7.value.push(post);
+          } else if (index % 3 === 1) {
+            Column8.value.push(post);
           } else {
-            console.log("删除失败", response.data.message);
+            Column9.value.push(post);
           }
+        });
+      }
+    }
+
+    const addToColumn = (data) => {
+      data.forEach((post, index) => {
+        if (index % 3 === 0) {
+          Column1.value.push(post);
+        } else if (index % 3 === 1) {
+          Column2.value.push(post);
         } else {
-          console.log("服务器未返回数据");
+          Column3.value.push(post);
         }
-      } catch (error) {
-        console.error("删除帖子时发生错误", error);
-      }
-    };
-    const searchPostOnClick = async () => {
-      let searchText = search.value;
-      let res = await searchPost(searchText);
-      if (res.code === 0) {
-        console.log("搜索成功");
-        posts.value = res.data.map((post) => ({
-          id: post.postId,
-          image: post.image.split(','), // 你可以根据需要调整图片的处理方式
-          title: post.title,
-          description: post.content,
-          author: post.userName, // 你可以根据需要调整作者的处理方式
-          date: new Date(post.publishDate).toLocaleDateString("zh-CN", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          }),
-        }));
-        
-      }
-    };
-    
-    const handleTabClick = (tab) => {
-      tabName.value = tab.props.name; // 获取标签页的名称属性
-      console.log(`Tab clicked: ${tabName}`);
+      });
+    }
 
-      // 根据标签页名称执行不同的方法
-      if (tabName.value === "first") {
-        isEditable.value = true;
-        getPostList();
-      } else if (tabName.value === "second") {
-        isEditable.value = false;
-        getLikePostList();
-      } else if (tabName.value === "third") {
-        isEditable.value = false;
-        getCollectPostList();
-      }
+    const clearColumn = () => {
+      Column1.value = [];
+      Column2.value = [];
+      Column3.value = [];
     };
 
-    const handleEditPost = (postId) => {
-  // 隐藏详细页面
-  ifShowPost.value = false;
-
-  // 设置一定的延迟，确保页面切换流畅
-  setTimeout(() => {
-    // 设置选中的帖子信息，并调用编辑页面的 fetchPostDetails 方法
-    selectedPost.value = posts.value.find(post => post.id === postId);
-    EditPost.methods.fetchPostDetails(postId);
-  }, 300); // 可以根据需要调整延迟时间
-};
-
+    const browsePostOnClick = async (postId) => {
+      let res = await browsePostService(postId);
+      postInfo.value = res.data;
+      showModal.value = true;
+    }
 
     onMounted(() => {
-      //alert("created")
-      getPostList();
-    });
+      getUserDetail();
+      getUserPlanList();
+      getMyPostList();
+      getFavPostList();
+      getLikePostList();
+    })
 
     return {
-      search,
-      selectedPost,
-      newReply,
-      ifShowPost,
-      posts,
-      isReplying,
-      receiveReplyUser,
-      replyCommentCount,
-      isEditable,
-      selectPost,
-      addReply,
-      getUserPostService,
-      getUserLikePostService,
-      getUserCollectPostService,
-      getPostList,
-      getPostComments,
-      getIsTypingReply,
-      deletePost,
-      searchPostOnClick,
-      handleTabClick,
-      getLikePostList,
-      getCollectPostList,
-      handleEditPost,
+      editIcon,
+      PlanCard,
+      myPlanList,
+      nickName,
+      avatarImg,
+      myScore,
+      followCount,
+      fanCount,
+      showEditModal,
+      openEditModal,
+      Column1,
+      Column2,
+      Column3,
+      Column4,
+      Column5,
+      Column6,
+      Column7,
+      Column8,
+      Column9,
+      getMyPostList,
+
+      browsePostOnClick,
+      postInfo,
+      showModal,
     };
   },
-};
+});
 </script>
 
 <template>
-  <div class="common-layout">
-    <el-container>
-      <el-main>
-        <div class="topBar fixed-top-bar">
-          <div class="center-container">
-            <el-tabs @tab-click="handleTabClick" class="demo-tabs">
-              <el-tab-pane label="个人帖子" name="first" ></el-tab-pane>
-    <el-tab-pane label="历史点赞" name="second"></el-tab-pane>
-    <el-tab-pane label="历史收藏" name="third"></el-tab-pane>
-  </el-tabs>
-          </div>
-        </div>
-        <div class="posts-container">
-          <div class="posts-wrapper">
-            <PostCard
-              v-for="post in posts"
-              :key="post.id"
-              :image="post.image[0]"
-              :title="post.title"
-              :description="post.description"
-              @click="selectPost(post)"
+  <div style="height:100vh">
+    <div class="upper-container">
+      <div class="info-container">
+        <div class="avatar-container">
+          <n-flex justify="center">
+            <n-avatar
+                round
+                :size="150"
+                :src=avatarImg
             />
-          </div>
+          </n-flex>
         </div>
-      </el-main>
-      <el-dialog v-model="ifShowPost" width="70%" class="postDialog">
-        <div class="post-container">
-          <div class="postLeftSide">
-            <el-carousel height="500px">
-              <el-carousel-item
-                style="
-                  display: flex;
-                  justify-content: center;
-                  align-items: center;
-                "
-                v-for="item in selectedPost.image"
-                :key="item"
-              >
-                <el-image
-                  style="width: 100%; height: auto; object-fit: contain"
-                  :src="item"
-                  fit="fit"
-                />
-              </el-carousel-item>
-            </el-carousel>
+
+        <div class="text-container">
+          <n-flex>
+            <div class="nick-name">
+              {{ nickName }}
+            </div>
+
+            <div class="edit-button">
+              <n-button quaternary circle @click="openEditModal">
+                <template #icon>
+                  <n-icon>
+                    <edit-icon/>
+                  </n-icon>
+                </template>
+              </n-button>
+            </div>
+
+          </n-flex>
+
+
+          <div class="score">
+            用户积分：{{ myScore }}
           </div>
 
-          <div class="postRightSide">
-            <div class="post-actions">
-              <EditPost :post="selectedPost" v-if="isEditable" />
-              <el-button class="delete-button" @click="deletePost(selectedPost.id)"v-if="isEditable"
-                         style="margin-right: 5vh;margin-top: 0.5vh;height: 4.2vh">删除</el-button>
-            </div>
-            <div class="comments-container">
-              <h2 class="post-title">{{ selectedPost.title }}</h2>
-              <p class="post-author">作者: {{ selectedPost.author }}</p>
-              <p class="post-date">发布日期: {{ selectedPost.date }}</p>
-              <p class="post-description">
-                {{ selectedPost.description }}
-              </p>
-              <h3>评论</h3>
-              <PostComments
-                :postId="selectedPost.id"
-                v-on:isTypingReply="getIsTypingReply"
-              />
-            </div>
-            <!-- 底部固定的点赞、收藏和评论框 -->
-            <div v-if="!isReplying">
-              <PostBottomBar :postId="selectedPost.id" />
-            </div>
-            <div v-if="isReplying">
-              <div class="bottom-actions">
-                <div class="new-comment">
-                  <el-input
-                    type="textarea"
-                    v-model="newReply"
-                    placeholder="回复评论"
-                    rows="1"
-                    class="comment-input"
-                  />
-                  <button @click="addReply" class="send-button">发送</button>
-                  <button @click="isReplying = false" class="cancel-button">
-                    取消
-                  </button>
-                </div>
-              </div>
-            </div>
+          <div class="count-info">
+            <n-flex>
+              <div class="follow-count">关注：{{ followCount }}</div>
+              <div class="fan-count">粉丝：{{ fanCount }}</div>
+              <!--              <div class="like-fav-count">获赞与收藏：20</div>-->
+            </n-flex>
+
           </div>
         </div>
-      </el-dialog>
-    </el-container>
+      </div>
+    </div>
+
+    <div class="lower-container">
+      <div class="switch-buttons">
+        <div style="width: 80%;z-index: 0;">
+          <n-tabs default-value="plan" :bar-width="200" justify-content="center" type="line">
+            <n-tab-pane name="plan" tab="计划">
+              <div v-for="(plan, index) in myPlanList" :key="index" class="plan-list-container">
+                <PlanCard
+                    :plan-id="plan.planId"
+                    :title="plan.title"
+                    :description="plan.description"
+                    :start-time="plan.startDate"
+                    :end-time="plan.endDate"
+                />
+              </div>
+            </n-tab-pane>
+
+            <n-tab-pane name="post" tab="帖子">
+              <n-row gutter="16">
+                <n-col class="post-col" span="8">
+                  <div v-for="(post, index) in Column1" :key="index" class="post-card">
+                    <PostCardVue
+                        @click="browsePostOnClick(post.postId)"
+                        :image="post.overviewImage"
+                        :avatarImg="post.avatarImg"
+                        :title="post.title"
+                        :nickName="post.nickName"
+                        :like-count="post.likeCount"
+                        :fav-count="post.favCount"
+                    />
+                  </div>
+                </n-col>
+                <n-col class="post-col" span="8">
+                  <div v-for="(post, index) in Column2" :key="index" class="post-card">
+                    <PostCardVue
+                        @click="browsePostOnClick(post.postId)"
+                        :image="post.overviewImage"
+                        :avatarImg="post.avatarImg"
+                        :title="post.title"
+                        :nickName="post.nickName"
+                        :like-count="post.likeCount"
+                        :fav-count="post.favCount"
+                    />
+                  </div>
+                </n-col>
+                <n-col class="post-col" span="8">
+                  <div v-for="(post, index) in Column3" :key="index" class="post-card">
+                    <PostCardVue
+                        @click="browsePostOnClick(post.postId)"
+                        :image="post.overviewImage"
+                        :avatarImg="post.avatarImg"
+                        :title="post.title"
+                        :nickName="post.nickName"
+                        :like-count="post.likeCount"
+                        :fav-count="post.favCount"
+                    />
+                  </div>
+                </n-col>
+              </n-row>
+            </n-tab-pane>
+
+            <n-tab-pane name="fav" tab="收藏">
+              <n-row gutter="16">
+                <n-col class="post-col" span="8">
+                  <div v-for="(post, index) in Column4" :key="index" class="post-card">
+                    <PostCardVue
+                        @click="browsePostOnClick(post.postId)"
+                        :image="post.overviewImage"
+                        :avatarImg="post.avatarImg"
+                        :title="post.title"
+                        :nickName="post.nickName"
+                        :like-count="post.likeCount"
+                        :fav-count="post.favCount"
+                    />
+                  </div>
+                </n-col>
+                <n-col class="post-col" span="8">
+                  <div v-for="(post, index) in Column5" :key="index" class="post-card">
+                    <PostCardVue
+                        @click="browsePostOnClick(post.postId)"
+                        :image="post.overviewImage"
+                        :avatarImg="post.avatarImg"
+                        :title="post.title"
+                        :nickName="post.nickName"
+                        :like-count="post.likeCount"
+                        :fav-count="post.favCount"
+                    />
+                  </div>
+                </n-col>
+                <n-col class="post-col" span="8">
+                  <div v-for="(post, index) in Column6" :key="index" class="post-card">
+                    <PostCardVue
+                        @click="browsePostOnClick(post.postId)"
+                        :image="post.overviewImage"
+                        :avatarImg="post.avatarImg"
+                        :title="post.title"
+                        :nickName="post.nickName"
+                        :like-count="post.likeCount"
+                        :fav-count="post.favCount"
+                    />
+                  </div>
+                </n-col>
+              </n-row>
+            </n-tab-pane>
+
+            <n-tab-pane name="like" tab="点赞">
+              <n-row gutter="16">
+                <n-col class="post-col" span="8">
+                  <div v-for="(post, index) in Column7" :key="index" class="post-card">
+                    <PostCardVue
+                        @click="browsePostOnClick(post.postId)"
+                        :image="post.overviewImage"
+                        :avatarImg="post.avatarImg"
+                        :title="post.title"
+                        :nickName="post.nickName"
+                        :like-count="post.likeCount"
+                        :fav-count="post.favCount"
+                    />
+                  </div>
+                </n-col>
+                <n-col class="post-col" span="8">
+                  <div v-for="(post, index) in Column8" :key="index" class="post-card">
+                    <PostCardVue
+                        @click="browsePostOnClick(post.postId)"
+                        :image="post.overviewImage"
+                        :avatarImg="post.avatarImg"
+                        :title="post.title"
+                        :nickName="post.nickName"
+                        :like-count="post.likeCount"
+                        :fav-count="post.favCount"
+                    />
+                  </div>
+                </n-col>
+                <n-col class="post-col" span="8">
+                  <div v-for="(post, index) in Column9" :key="index" class="post-card">
+                    <PostCardVue
+                        @click="browsePostOnClick(post.postId)"
+                        :image="post.overviewImage"
+                        :avatarImg="post.avatarImg"
+                        :title="post.title"
+                        :nickName="post.nickName"
+                        :like-count="post.likeCount"
+                        :fav-count="post.favCount"
+                    />
+                  </div>
+                </n-col>
+              </n-row>
+            </n-tab-pane>
+          </n-tabs>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <transition name="modal-fade">
+      <div v-if="showEditModal" @click="showEditModal = false">
+        <EditModal/>
+      </div>
+    </transition>
+  </div>
+
+  <div>
+    <transition name="modal-fade">
+      <div v-if="showModal" @click="showModal = false">
+        <BrowsePost
+            :postInfo="postInfo"
+        />
+      </div>
+    </transition>
   </div>
 </template>
 
-
 <style scoped>
-body,
-html {
-  margin: 0;
-  padding: 0;
-  font-family: Arial, sans-serif;
-  background-color: #f5f5f5;
-}
-
-/* 固定顶部搜索框 */
-.fixed-top-bar {
-  position: fixed;
-  top: 0;
-  left: 30vh;
-  right: 0;
-  /* z-index: 10; */
-  background-color: #fffffb;
-  padding: 10px;
-
-  /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); */
-}
-
-.topBar {
+.upper-container {
+  width: 100%;
+  height: 300px;
+  /*  background-color: grey;*/
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.center-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-grow: 1;
-}
-
-/* 固定侧边栏 */
-.posts-container {
-  margin-top: 70px;
-  padding: 10px;
-  height: calc(100vh - 70px);
-  overflow-y: scroll;
-  /* overflow-y: hidden; */
-}
-
-.comments-container {
-  flex-grow: 1;
-  overflow-y: auto;
-}
-.posts-wrapper {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
+  flex-direction: row;
   justify-content: center;
 }
 
-.post-card {
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  max-width: 300px;
-  flex: 0 0 auto;
-  background-color: #fff;
-}
-
-.postDialog {
-  width: 70vh;
-}
-
-.post-container {
+.info-container {
+  /*  background-color: green;*/
+  width: 600px;
+  height: 100%;
   display: flex;
-  justify-content: space-between;
+  flex-direction: row;
 }
 
-.postLeftSide {
-  width: 40%;
-}
-
-.postRightSide {
+.avatar-container {
+  width: 300px;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  height: 70vh;
-  width: 55%;
-  padding-left: 20px;
+  justify-content: center;
 }
 
-.post-title {
-  font-size: 18px;
-  margin: 0 0 10px 0;
+.text-container {
+  width: 300px;
+  height: 100%;
+  /*  background-color: #6c68d9;*/
+  display: flex;
+  flex-direction: column;
 }
 
-.post-description {
-  font-size: 14px;
-  color: #666;
-}
-
-.post-details {
-  padding: 20px;
-}
-
-.post-author,
-.post-date {
-  font-size: 14px;
-  color: #999;
-}
-
-.no-post-selected {
-  font-size: 16px;
-  color: #666;
-  text-align: center;
-  padding: 20px;
-}
-
-/* 评论样式 */
-.comments-section {
-  margin-top: 20px;
-}
-
-.comment {
-  margin-bottom: 10px;
-}
-
-.comment-author {
+.nick-name {
+  margin-top: 80px;
+  font-size: 33px;
   font-weight: bold;
 }
 
-.comment-text {
-  margin: 5px 0;
+.edit-button {
+  margin-top: 90px;
 }
 
-.new-comment {
-  display: flex;
-  align-items: flex-start;
+.score {
   margin-top: 10px;
-  width: 55vh;
+  font-size: 13px;
+  color: grey;
 }
 
-.comment-input {
-  flex: 1;
-  margin-right: 10px;
-}
-
-.send-button {
-  padding: 10px 20px;
-  margin-left: 10px;
-  font-size: 15px;
-  border: none;
-  background-color: #008e74;
-  color: white;
-  cursor: pointer;
-  border-radius: 5px;
-}
-
-.send-button:hover {
-  background-color: #005445;
-}
-
-.cancel-button {
-  padding: 10px 20px;
-  margin-left: 10px;
-  font-size: 15px;
-  border: none;
-  background-color: #808080;
-  color: white;
-  cursor: pointer;
-  border-radius: 5px;
-}
-
-.cancel-button:hover {
-  background-color: #505050;
-}
-
-.replies {
-  margin-left: 20px;
-  margin-top: 10px;
-}
-
-.reply {
-  margin-bottom: 5px;
-}
-
-.reply-author {
-  font-weight: bold;
-}
-
-.reply-text {
-  margin: 5px 0;
-}
-
-.reply-input {
-  margin-top: 10px;
-  margin-left: 20px;
-}
-
-.el-button {
-  margin-top: 10px;
-}
-
-.bottom-actions {
-  /*   position: fixed; */
-  bottom: 0;
-  right: 0;
-  width: 45vh;
-  background-color: #fff;
-  /* padding: 10px 20px; */
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid #ddd;
-}
-
-.img-box {
-  width: 20px;
-}
-
-.like-image {
+.lower-container {
   width: 100%;
 }
 
-.custom-input {
-  text-align: center;
+.count-info {
+  margin-top: 12px;
 }
-.post-actions {
+
+.fan-count {
+  margin-left: 10px;
+}
+
+.like-fav-count {
+  margin-left: 10px;
+}
+
+.switch-buttons {
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-bottom: 10px;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.plan-list-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.post-col {
+  min-width: 280px;
+}
+
+.post-card {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  margin-bottom: 20px;
 }
 </style>

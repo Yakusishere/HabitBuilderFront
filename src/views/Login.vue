@@ -2,6 +2,8 @@
 import {User, Lock} from "@element-plus/icons-vue";
 import {onMounted, ref} from "vue";
 import instance from "@/utils/request.js";
+import {useRouter} from "vue-router";
+import {loginService} from "@/api/user.js";
 //控制注册与登录表单的显示， 默认显示注册
 const isRegister = ref(false);
 const confirmPassword = ref("");
@@ -64,21 +66,15 @@ const register = async () => {
   }
 };
 
-//提供调用登录接口的函数
-const userLoginService = (loginData) => {
-  return instance.post("/user/login", loginData);
-};
-//登录函数
-//import { useTokenStore } from "@/stores/token.js";
-import {useRouter} from "vue-router";
-import useUserInfoStore from "@/stores/userInfo";
 
-const userInfoStore = useUserInfoStore();
+
+
 const router = useRouter();
-//const tokenStore = useTokenStore();
 const login = async () => {
   try {
-    let result = await userLoginService(registerData.value);
+    console.log("registerData:"+registerData.value.userName+registerData.value.password);
+    let result = await loginService(registerData.value);
+    console.log("登录成功");
     if (result.code === 0) {
       // 存储 token 到 localStorage
       localStorage.setItem('token', result.data.token);  // 将 token 存储到 localStorage

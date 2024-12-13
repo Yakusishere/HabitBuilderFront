@@ -9,7 +9,6 @@ import UserPostVue from '@/views/user/UserPost.vue'
 import UserResetInfoVue from '@/views/user/UserResetInfo.vue'
 import CommunityPageVue from '@/views/community/CommunityPage.vue'
 import makePlan from "@/views/plan/makePlan.vue";
-//import PostVue from '@/views/community/com/myCommunityPage.vue'
 //定义路由关系
 const routes = [
     {path: '/', redirect: '/login'},  // 修改默认路由，重定向到 /login
@@ -24,9 +23,9 @@ const routes = [
             {path: '/plan/makePlan', component: makePlan},
             {path: '/plan/planPage', component: PlanPageVue},
             {path: '/plan/AI', component: AIVue},
-            {path: '/user/userinfo', component: UserInfoVue},
-            {path: '/user/userPost', component: UserPostVue},
-            {path: '/user/userResetInfo', component: UserResetInfoVue},
+            {path: '/user/userinfo', component: UserPostVue},
+/*            {path: '/user/userPost', component: UserPostVue},
+            {path: '/user/userResetInfo', component: UserResetInfoVue},*/
             {path: '/community/communityPage', component: CommunityPageVue},
         ]
     },

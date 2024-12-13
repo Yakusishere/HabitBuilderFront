@@ -26,7 +26,7 @@
                         style="margin-left: 15px"
                     />
 
-                    <div class="nick-name">
+                    <div class="post-nick-name">
                       {{ postInfo.nickName }}
                     </div>
                   </n-flex>
@@ -44,7 +44,10 @@
           <div class="content-container">
             <n-scrollbar style="max-height: 560px">
               <div class="title-container">
-                {{ postInfo.title }}
+                <div style="margin-left: 15px;margin-right: 15px;">
+                  {{ postInfo.title }}
+                </div>
+
               </div>
 
               <div class="description-container">
@@ -61,7 +64,7 @@
 
               <div class="comment-section-container">
                 <div class="comment-count-text">
-                  共{{ postInfo.commentCount }}条评论
+                  共{{ commentCount }}条评论
                 </div>
 
                 <div v-for="(comment,index) in commentSection" :key="index">
@@ -189,7 +192,7 @@
                         style="height: 23px;width: 23px"
                     />
                     <div style="margin-top: 1px;margin-left: -3px">
-                      {{ postInfo.likeCount }}
+                      {{ likeCount }}
                     </div>
                   </n-flex>
                 </div>
@@ -198,7 +201,7 @@
                   <n-flex>
                     <fav style="height: 25px; width: 25px"/>
                     <div style="margin-top: 1px; margin-left: -3px">
-                      {{ postInfo.favCount }}
+                      {{ favCount }}
                     </div>
                   </n-flex>
                 </div>
@@ -208,7 +211,7 @@
                     <comment style="margin-top: 1px"/>
 
                     <div style="margin-top: 1px; margin-left: -4px">
-                      {{ postInfo.commentCount }}
+                      {{ commentCount }}
                     </div>
                   </n-flex>
                 </div>
@@ -247,7 +250,7 @@
                 <div class="comment-input-bar">
                   <n-input
                       type="text"
-                      :placeholder="replyText"
+                      placeholder="请输入回复"
                       v-model:value="replyInput"
                   />
                 </div>
@@ -308,13 +311,6 @@ export default {
       required: true
     }
   },
-  computed: {
-    replyText() {
-      let text = this.replyToUser.valueOf();
-      console.log("text:"+text);
-      return `回复${text}`;
-    }
-  },
   setup(props) {
     const commentSection = ref([]);
     const isTyping = ref(false);
@@ -327,6 +323,10 @@ export default {
     const replyToObject = ref(null);
     const currentCommentIndex = ref(-1);
     const replyToUser = ref("");
+
+    const commentCount = ref();
+    const likeCount = ref();
+    const favCount = ref();
 
     const typingComment = () => {
       isTyping.value = true;
@@ -362,6 +362,7 @@ export default {
           message: h('i', {style: 'color: teal'}, '评论已发送，地球已接收到你的智慧信号'),
         })
         isTyping.value = false;
+        commentCount.value += 1;
         commentInput.value = "";
         commentSection.value.unshift(res.data);
       }
@@ -392,6 +393,7 @@ export default {
         })
         isTyping.value = false;
         replyInput.value = "";
+        commentCount.value += 1;
         commentSection.value[currentCommentIndex.value].replyVoList.push(res.data);
       }
     }
@@ -399,6 +401,9 @@ export default {
     onMounted(() => {
       commentSection.value = props.postInfo.commentVoList;
       isTyping.value = isComment.value = isReply.value = false;
+      commentCount.value = props.postInfo.commentCount;
+      likeCount.value = props.postInfo.likeCount;
+      favCount.value = props.postInfo.favCount;
     })
     return {
       commentSection,
@@ -408,6 +413,9 @@ export default {
       commentInput,
       replyInput,
       replyToUser,
+      likeCount,
+      favCount,
+      commentCount,
       typingComment,
       typingReply,
       sendCommentOnClick,
@@ -480,7 +488,7 @@ export default {
   /*  background-color: #5A5F73;*/
 }
 
-.nick-name {
+.post-nick-name {
   margin-left: 10px;
   display: flex;
   flex-direction: column;
@@ -505,10 +513,11 @@ export default {
 
 .title-container {
   width: 100%;
-  padding-top: 0px;
-  padding-left: 15px;
+  padding-top: 10px;
+  padding-left: 0px;
   font-size: 35px;
   font-weight: bold;
+  /*  background-color: green;*/
 }
 
 .description-container {
